@@ -50,6 +50,11 @@ systemctl status oil-imperium
 Open `http://<container-ip>:3000` from a computer on your home network. The
 bottom line of the title screen should say **SERVER ONLINE**.
 
+Online games are saved in `/opt/oil-imperium/data/oil-imperium.db`, so they
+survive restarts and updates. Back up that file (or the whole container with
+Proxmox's normal backups) to keep them. Set `DB_PATH` in the service file to
+store it somewhere else.
+
 ## 5. Updating
 
 ```sh
@@ -78,5 +83,5 @@ If you prefer Docker (for example inside a VM or a privileged LXC with nesting e
 
 ```sh
 docker build -t oil-imperium .
-docker run -d --name oil-imperium -p 3000:3000 --restart unless-stopped oil-imperium
+docker run -d --name oil-imperium -p 3000:3000 -v oil-data:/app/data --restart unless-stopped oil-imperium
 ```

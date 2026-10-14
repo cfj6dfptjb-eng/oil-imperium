@@ -15,8 +15,11 @@ describe('LocalGame', () => {
 
   it('reports errors instead of throwing', () => {
     const game = new LocalGame('Interoil', 'timeLimit', 1);
-    expect(game.perform({ type: 'sellOil', region: 'Europe', barrels: 5 })).toBe('Not enough oil in storage');
-    expect(game.perform({ type: 'buyLicence', region: 'Europe' })).toBeNull();
+    const results: (string | null)[] = [];
+    game.perform({ type: 'sellOil', region: 'Europe', barrels: 5 }, (e) => results.push(e));
+    game.perform({ type: 'buyLicence', region: 'Europe' }, (e) => results.push(e));
+    expect(results).toEqual(['Not enough oil in storage', null]);
+    expect(game.view.you.licences).toEqual(['Europe']);
   });
 
   it('finishes when the human goes bankrupt, even if the computers play on', () => {

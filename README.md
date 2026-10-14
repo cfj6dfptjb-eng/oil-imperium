@@ -7,9 +7,10 @@ oil business strategy.
 
 See [docs/design.md](docs/design.md) for the full design and milestones.
 
-> **Status:** milestone 2. A full single-player game against three computer
-> companies runs in the browser: office hub, world map, region fields, oil market,
-> bank and monthly reports. Online multiplayer comes in milestone 3.
+> **Status:** milestone 3. Play single player against the computer, or host an
+> online game for 2 to 4 players: share the 4-letter code (or the invite link), pick
+> companies in the lobby, and everyone plays the same month at once. Empty seats are
+> played by the computer. Games are saved on the server and can be resumed.
 
 ## Project layout
 
@@ -39,8 +40,9 @@ npm run build
 npm start          # serves the game on http://localhost:3000
 ```
 
-Environment variables: `PORT` (default 3000), `HOST` (default 0.0.0.0) and
-`STATIC_DIR` (default `client/dist`).
+Environment variables: `PORT` (default 3000), `HOST` (default 0.0.0.0),
+`STATIC_DIR` (default `client/dist`) and `DB_PATH` for saved online games (default
+`data/oil-imperium.db`, using Node's built-in SQLite, so there is nothing extra to install).
 
 To run it on a Proxmox host, follow [deploy/proxmox-lxc.md](deploy/proxmox-lxc.md).
 A `Dockerfile` is included as an alternative.

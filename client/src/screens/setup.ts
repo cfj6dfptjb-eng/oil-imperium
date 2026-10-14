@@ -38,8 +38,10 @@ export function drawSetup(ui: Ui, app: App): void {
   ui.text('THE OTHER COMPANIES ARE PLAYED', SCREEN_WIDTH / 2, 176, PAL.grey, 'center');
   ui.text('BY THE COMPUTER', SCREEN_WIDTH / 2, 186, PAL.grey, 'center');
 
-  ui.button(SCREEN_WIDTH / 2 - 50, 210, 'START GAME', () => {
+  ui.button(SCREEN_WIDTH / 2 - 105, 210, 'BACK', () => (app.screen = 'menu'), { w: 100 });
+  ui.button(SCREEN_WIDTH / 2 + 5, 210, 'START GAME', () => {
     app.game = new LocalGame(app.setup.company, app.setup.goal);
+    app.seenMonth = 0;
     app.screen = 'office';
     say(app, 'Click the world map on the wall to explore');
   }, { w: 100 });

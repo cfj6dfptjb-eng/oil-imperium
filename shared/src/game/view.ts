@@ -1,12 +1,17 @@
 import type { Company } from '../constants.js';
+import { netWorth } from './economy.js';
 import type { Field, GameState, Player } from './types.js';
 
-/** What one company may see of a rival. */
+/** What one company may see of a rival: public standing, not the books. */
 export interface RivalView {
   company: Company;
   bankrupt: boolean;
   endedTurn: boolean;
   licences: Player['licences'];
+  netWorth: number;
+  producingWells: number;
+  /** Barrels sold last month. */
+  lastSold: number;
 }
 
 export interface PlayerView extends Omit<GameState, 'players' | 'fields' | 'rngState'> {
@@ -29,7 +34,15 @@ export function viewFor(state: GameState, company: Company): PlayerView {
     you: structuredClone(you),
     rivals: players
       .filter((p) => p.company !== company)
-      .map((p) => ({ company: p.company, bankrupt: p.bankrupt, endedTurn: p.endedTurn, licences: [...p.licences] })),
+      .map((p) => ({
+        company: p.company,
+        bankrupt: p.bankrupt,
+        endedTurn: p.endedTurn,
+        licences: [...p.licences],
+        netWorth: netWorth(state, p),
+        producingWells: fields.filter((f) => f.owner === p.company && f.status === 'producing').length,
+        lastSold: p.salesHistory.at(-1) ?? 0,
+      })),
     fields: fields.map((f) => {
       const revealed = f.owner === company && f.status !== 'unexplored' && f.status !== 'drilling';
       return { ...f, reserves: revealed ? f.reserves : 0, depth: f.owner === company && f.status !== 'unexplored' ? f.depth : 0 };

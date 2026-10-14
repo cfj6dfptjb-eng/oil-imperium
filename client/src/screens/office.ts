@@ -1,5 +1,5 @@
 import { SCREEN_WIDTH } from '@oil/shared';
-import type { App } from '../app.js';
+import { act, type App } from '../app.js';
 import { date } from '../format.js';
 import { PAL } from '../palette.js';
 import type { Ui } from '../ui.js';
@@ -59,15 +59,15 @@ export function drawOffice(ui: Ui, app: App): void {
   ctx.fillRect(cal.x, cal.y, 50, 40);
   ctx.fillStyle = PAL.red;
   ctx.fillRect(cal.x, cal.y, 50, 10);
-  const [mon, year] = date(app.game!.state.month).split(' ');
+  const [mon, year] = date(app.game!.view!.month).split(' ');
   ui.text(mon, cal.x + 25, cal.y + 1, PAL.white, 'center');
   ui.big(year.slice(2), cal.x + 25, cal.y + 16, PAL.black, 'center');
 
   // Door: end the month.
   const door = { x: 262, y: 84, w: 40, h: 86 };
   const overDoor = ui.hotspot(door.x, door.y, door.w, door.h, () => {
-    app.game!.endMonth();
-    app.screen = app.game!.finished ? 'gameover' : 'report';
+    // The main loop switches to the report once the new month arrives.
+    act(app, { type: 'endTurn' }, 'Month ended');
   });
   ctx.fillStyle = overDoor ? PAL.gold : PAL.woodDark;
   ctx.fillRect(door.x - 2, door.y - 2, door.w + 4, door.h + 2);
@@ -118,6 +118,14 @@ export function drawOffice(ui: Ui, app: App): void {
   ctx.fillStyle = PAL.grey;
   ctx.fillRect(safe.x + 10, safe.y + 12, 8, 8);
   hint('SAFE: BANK LOANS', overSafe);
+
+  const game = app.game!;
+  if (game.view!.you.endedTurn) {
+    const others = game.waitingFor.filter((c) => c !== game.company);
+    ui.panel(60, 90, 200, 36, PAL.black);
+    ui.text('MONTH ENDED. WAITING FOR', SCREEN_WIDTH / 2, 96, PAL.gold, 'center');
+    ui.text(others.length ? others.join(', ').toUpperCase() : 'THE SERVER', SCREEN_WIDTH / 2, 110, PAL.white, 'center');
+  }
 
   drawHud(ui, app);
   drawFooter(ui, app, 'Click an object in the office');

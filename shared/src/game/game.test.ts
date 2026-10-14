@@ -296,7 +296,7 @@ describe('player view', () => {
     expect(viewA.fields.find((f) => f.id === field.id)!.reserves).toBe(field.reserves);
     expect(viewB.fields.find((f) => f.id === field.id)!.reserves).toBe(0);
     expect(viewA.fields.find((f) => f.id === other.id)!.reserves).toBe(0);
-    expect(viewA.rivals[0]).toEqual({ company: B, bankrupt: false, endedTurn: false, licences: [GULF] });
+    expect(viewA.rivals[0]).toMatchObject({ company: B, bankrupt: false, endedTurn: false, licences: [GULF], producingWells: 0 });
     expect(viewA).not.toHaveProperty('rngState');
     expect(JSON.stringify(viewA.rivals)).not.toContain('cash');
   });

@@ -25,7 +25,8 @@ export function drawTitle(ui: Ui, app: App): void {
     pixelText(ctx, 'CLICK TO START', SCREEN_WIDTH / 2, 200, PAL.black, 8, 'center');
   }
   ui.hotspot(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, () => {
-    app.screen = 'setup';
+    // A shared invite link (?room=CODE) goes straight to joining.
+    app.screen = app.joinCode.length === 4 ? 'join' : 'menu';
   });
 
   const status =
