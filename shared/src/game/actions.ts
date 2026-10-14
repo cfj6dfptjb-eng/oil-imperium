@@ -1,6 +1,6 @@
 import type { Company } from '../constants.js';
 import { Rng } from '../rng.js';
-import { activePlayers } from './economy.js';
+import { activePlayers, shippingLeft } from './economy.js';
 import { resolveMonth } from './month.js';
 import { REGION_DATA, RULES } from './rules.js';
 import type { Action, ActionResult, GameState, Player } from './types.js';
@@ -88,9 +88,13 @@ function run(state: GameState, player: Player, action: Action): string | null {
       if (!(barrels > 0)) return 'Choose how many barrels to sell';
       const stored = player.stored[action.region] ?? 0;
       if (barrels > stored) return 'Not enough oil in storage';
+      const left = shippingLeft(player, action.region);
+      if (left === 0) return 'No shipping capacity left this month';
+      if (barrels > left) return `You can only ship ${left.toLocaleString('en-US')} more barrels this month`;
       const err = spend(player, 0, days.sellOil);
       if (err) return err;
       player.stored[action.region] = stored - barrels;
+      player.shipped[action.region] = (player.shipped[action.region] ?? 0) + barrels;
       player.cash += Math.round(barrels * state.market.price);
       player.soldThisMonth += barrels;
       return null;
@@ -113,6 +117,68 @@ function run(state: GameState, player: Player, action: Action): string | null {
       const err = spend(player, amount, days.loan);
       if (err) return err;
       player.debt -= amount;
+      return null;
+    }
+
+    case 'buildPipeline': {
+      if (!player.licences.includes(action.region)) return 'You need a licence for this region';
+      if (player.pipelines.includes(action.region)) return 'You already have a pipeline here';
+      const err = spend(player, REGION_DATA[action.region].pipelineCost, days.buildPipeline);
+      if (err) return err;
+      player.pipelines.push(action.region);
+      return null;
+    }
+
+    case 'buyTanker': {
+      if (!player.licences.includes(action.region)) return 'You need a licence for this region';
+      const err = spend(player, RULES.tankerCost, days.buyTanker);
+      if (err) return err;
+      player.tankers[action.region] = (player.tankers[action.region] ?? 0) + 1;
+      return null;
+    }
+
+    case 'acceptContract': {
+      const offer = state.contractOffers.find((c) => c.id === action.contractId);
+      if (!offer) return 'That contract has already gone';
+      if (player.contracts.length >= RULES.maxContracts) return `You can hold at most ${RULES.maxContracts} contracts`;
+      const err = spend(player, 0, days.acceptContract);
+      if (err) return err;
+      state.contractOffers = state.contractOffers.filter((c) => c !== offer);
+      player.contracts.push(offer);
+      return null;
+    }
+
+    case 'sabotage': {
+      if (action.target === player.company) return 'You cannot sabotage yourself';
+      const target = state.players.find((p) => p.company === action.target);
+      if (!target) return 'That company is not in this game';
+      if (target.bankrupt) return 'That company is already bankrupt';
+      if (player.plots.some((p) => p.target === action.target && p.kind === action.kind)) {
+        return 'You have already ordered that this month';
+      }
+      const err = spend(player, RULES.sabotageCost[action.kind], days.sabotage);
+      if (err) return err;
+      player.plots.push({ target: action.target, kind: action.kind });
+      return null;
+    }
+
+    case 'setSecurity': {
+      if (player.security === action.on) return action.on ? 'Security is already hired' : 'You have no security to dismiss';
+      const err = spend(player, 0, days.setSecurity);
+      if (err) return err;
+      player.security = action.on;
+      return null;
+    }
+
+    case 'extinguishFire': {
+      const field = state.fields.find((f) => f.id === action.fieldId);
+      if (!field) return 'Unknown field';
+      if (field.owner !== player.company) return 'You do not own this field';
+      if (field.status !== 'burning') return 'This well is not on fire';
+      const err = spend(player, RULES.extinguishCost, days.extinguishFire);
+      if (err) return err;
+      field.status = 'producing';
+      field.fireMonths = 0;
       return null;
     }
 

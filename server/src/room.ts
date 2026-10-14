@@ -11,6 +11,7 @@ import {
   type GameState,
   type RoomInfo,
   type ServerMessage,
+  upgradeGame,
   type VictoryGoal,
 } from '@oil/shared';
 
@@ -45,7 +46,9 @@ export function newToken(): string {
  * error message, or null on success.
  */
 export class Room {
-  constructor(public data: RoomData) {}
+  constructor(public data: RoomData) {
+    if (data.state) upgradeGame(data.state);
+  }
 
   static create(code: string, hostName: string): { room: Room; token: string } {
     const token = newToken();

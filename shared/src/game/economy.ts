@@ -1,3 +1,4 @@
+import type { Region } from '../constants.js';
 import { RULES } from './rules.js';
 import type { GameState, Player } from './types.js';
 
@@ -20,4 +21,18 @@ export function marketShare(state: GameState, player: Player): number {
 
 export function activePlayers(state: GameState): Player[] {
   return state.players.filter((p) => !p.bankrupt);
+}
+
+/** Barrels a month that can leave a region: by road, plus pipeline and tankers. */
+export function shippingCapacity(player: Player, region: Region): number {
+  return (
+    RULES.roadCapacity +
+    (player.pipelines.includes(region) ? RULES.pipelineCapacity : 0) +
+    (player.tankers[region] ?? 0) * RULES.tankerCapacity
+  );
+}
+
+/** Shipping capacity still unused this month in a region. */
+export function shippingLeft(player: Player, region: Region): number {
+  return Math.max(0, shippingCapacity(player, region) - (player.shipped[region] ?? 0));
 }

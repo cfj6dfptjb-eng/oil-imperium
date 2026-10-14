@@ -92,12 +92,29 @@ export function drawOffice(ui: Ui, app: App): void {
   ctx.fillRect(paper.x, paper.y, paper.w, paper.h);
   ctx.fillStyle = PAL.greyDark;
   for (let i = 0; i < 3; i++) ctx.fillRect(paper.x + 4, paper.y + 3 + i * 4, paper.w - 8, 1);
-  hint('NEWSPAPER: OIL PRICE AND SALES', overPaper);
+  hint('NEWSPAPER: NEWS, OIL PRICE AND SALES', overPaper);
 
-  // Telephone on the desk: also the market, for selling.
-  ctx.fillStyle = PAL.black;
-  ctx.fillRect(170, 120, 22, 10);
-  ctx.fillRect(166, 116, 30, 4);
+  // Telephone on the desk: buyers calling with supply contracts.
+  const phone = { x: 164, y: 112, w: 34, h: 18 };
+  const overPhone = ui.hotspot(phone.x, phone.y, phone.w, phone.h, () => (app.screen = 'contracts'));
+  const ringing = app.game!.view!.contractOffers.length > 0 && Math.floor(app.frame / 20) % 6 === 0;
+  ctx.fillStyle = overPhone ? PAL.gold : PAL.black;
+  ctx.fillRect(170, 120 - (ringing ? 1 : 0), 22, 10);
+  ctx.fillRect(166, 116 - (ringing ? 2 : 0), 30, 4);
+  hint('TELEPHONE: SUPPLY CONTRACTS', overPhone);
+
+  // Trench coat on a hook: the agent, for sabotage and security.
+  const coat = { x: 230, y: 86, w: 24, h: 44 };
+  const overCoat = ui.hotspot(coat.x, coat.y, coat.w, coat.h, () => (app.screen = 'agent'));
+  ctx.fillStyle = PAL.woodDark;
+  ctx.fillRect(coat.x + 10, coat.y, 4, 4);
+  ctx.fillStyle = overCoat ? PAL.gold : PAL.goldDark;
+  ctx.fillRect(coat.x + 4, coat.y + 10, 16, 34);
+  ctx.fillRect(coat.x + 2, coat.y + 14, 20, 6);
+  ctx.fillStyle = PAL.greyDark;
+  ctx.fillRect(coat.x, coat.y + 4, 24, 3);
+  ctx.fillRect(coat.x + 6, coat.y - 2, 12, 6);
+  hint('COAT: THE AGENT (SABOTAGE AND SECURITY)', overCoat);
 
   // Filing cabinet: monthly report.
   const files = { x: 20, y: 110, w: 34, h: 60 };

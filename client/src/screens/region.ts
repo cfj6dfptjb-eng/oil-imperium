@@ -1,4 +1,4 @@
-import { FIELD_GRID, REGION_DATA, RULES, SCREEN_WIDTH, type Action, type Field } from '@oil/shared';
+import { FIELD_GRID, REGION_DATA, RULES, SCREEN_WIDTH, shippingCapacity, shippingLeft, type Action, type Field } from '@oil/shared';
 import { act, type App } from '../app.js';
 import { barrels, money } from '../format.js';
 import { COMPANY_COLORS, PAL } from '../palette.js';
@@ -65,14 +65,26 @@ export function drawRegion(ui: Ui, app: App): void {
   } else {
     const tanks = me.tanks[region] ?? 0;
     const stored = me.stored[region] ?? 0;
+    const left = shippingLeft(me, region);
+    const sell = Math.min(stored, left);
+    if (view.strikes.includes(region)) line('WORKERS ON STRIKE!', PAL.red);
     line(`TANKS: ${tanks}  (${barrels(tanks * RULES.tankCapacity)})`);
     line(`STORED: ${barrels(stored)}`, stored > 0 ? PAL.green : PAL.white);
     ui.button(PANEL_X, y, `+TANK ${money(RULES.tankCost)}`, () => run({ type: 'buildTank', region }, 'Tank built'));
-    if (stored > 0) {
-      ui.button(PANEL_X + 86, y, 'SELL ALL', () =>
-        run({ type: 'sellOil', region, barrels: stored }, `Sold ${barrels(stored)} at $${view.market.price.toFixed(2)}`),
+    if (sell > 0) {
+      ui.button(PANEL_X + 86, y, 'SELL', () =>
+        run({ type: 'sellOil', region, barrels: sell }, `Sold ${barrels(sell)} at $${view.market.price.toFixed(2)}`),
       );
     }
+    y += 16;
+    const tankers = me.tankers[region] ?? 0;
+    line(`PIPELINE: ${me.pipelines.includes(region) ? 'YES' : 'NO'}  TANKERS: ${tankers}`);
+    line(`SHIPS ${barrels(shippingCapacity(me, region))}/MO`, PAL.greyLight);
+    line(`LEFT THIS MONTH ${barrels(left)}`, left > 0 ? PAL.greyLight : PAL.red);
+    if (!me.pipelines.includes(region)) {
+      ui.button(PANEL_X, y, `PIPE ${money(data.pipelineCost)}`, () => run({ type: 'buildPipeline', region }, 'Pipeline built'));
+    }
+    ui.button(PANEL_X + 80, y, `TANKER ${money(RULES.tankerCost)}`, () => run({ type: 'buyTanker', region }, 'Tanker bought'));
     y += 18;
   }
 
@@ -90,8 +102,14 @@ export function drawRegion(ui: Ui, app: App): void {
     if (field.owner === game.company && field.status === 'drilling') {
       line(`DRILLED ${field.drilled} M`);
     }
-    if (field.owner === game.company && field.status === 'producing') {
+    if (field.owner === game.company && (field.status === 'producing' || field.status === 'burning')) {
       line(`RESERVES ${barrels(field.reserves)}`, PAL.green);
+    }
+    if (field.owner === game.company && field.status === 'burning') {
+      ui.button(PANEL_X, y, `FIGHT FIRE ${money(RULES.extinguishCost)}`, () =>
+        run({ type: 'extinguishFire', fieldId: field.id }, 'The fire fighters blew out the fire'),
+      );
+      y += 14;
     }
     const est = surveys.get(field.id);
     if (est !== undefined && field.status === 'unexplored') line(est ? `SURVEY: ~${barrels(est)}` : 'SURVEY: DRY HOLE', est ? PAL.green : PAL.red);
@@ -135,6 +153,10 @@ function drawTile(ctx: CanvasRenderingContext2D, field: Field, x: number, y: num
     case 'producing':
       drawDerrick(ctx, cx, y + TILE_H - 4, 14, frame, field.owner === me);
       break;
+    case 'burning':
+      drawDerrick(ctx, cx, y + TILE_H - 4, 14, frame, false);
+      drawFire(ctx, cx, y + TILE_H - 18, frame);
+      break;
     case 'dry':
       ctx.fillStyle = PAL.greyDark;
       for (let i = 0; i < 10; i++) {
@@ -147,4 +169,16 @@ function drawTile(ctx: CanvasRenderingContext2D, field: Field, x: number, y: num
       ctx.fillRect(cx - 3, y + TILE_H - 8, 6, 4);
       break;
   }
+}
+
+/** Flickering flames over a burning well. */
+function drawFire(ctx: CanvasRenderingContext2D, cx: number, base: number, frame: number): void {
+  const colors = [PAL.red, PAL.gold, PAL.white];
+  for (let i = 0; i < 7; i++) {
+    const h = 6 + ((i * 7 + Math.floor(frame / 6)) % 5) * 2;
+    ctx.fillStyle = colors[(i + Math.floor(frame / 8)) % 2];
+    ctx.fillRect(cx - 7 + i * 2, base - h, 2, h);
+  }
+  ctx.fillStyle = colors[2];
+  ctx.fillRect(cx - 1, base - 4, 2, 4);
 }

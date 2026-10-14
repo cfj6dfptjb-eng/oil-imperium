@@ -36,6 +36,12 @@ describe('parseAction', () => {
     expect(parseAction({ type: 'buyLicence', region: 'Europe' })).toEqual({ type: 'buyLicence', region: 'Europe' });
     expect(parseAction({ type: 'sellOil', region: 'USSR', barrels: 100 })).toEqual({ type: 'sellOil', region: 'USSR', barrels: 100 });
     expect(parseAction({ type: 'survey', fieldId: 'Europe:1,2' })).toEqual({ type: 'survey', fieldId: 'Europe:1,2' });
+    expect(parseAction({ type: 'buildPipeline', region: 'Alaska' })).toEqual({ type: 'buildPipeline', region: 'Alaska' });
+    expect(parseAction({ type: 'buyTanker', region: 'Alaska', extra: 1 })).toEqual({ type: 'buyTanker', region: 'Alaska' });
+    expect(parseAction({ type: 'acceptContract', contractId: 'C4' })).toEqual({ type: 'acceptContract', contractId: 'C4' });
+    expect(parseAction({ type: 'sabotage', target: 'Transoil', kind: 'fire' })).toEqual({ type: 'sabotage', target: 'Transoil', kind: 'fire' });
+    expect(parseAction({ type: 'setSecurity', on: true })).toEqual({ type: 'setSecurity', on: true });
+    expect(parseAction({ type: 'extinguishFire', fieldId: 'USSR:0,0' })).toEqual({ type: 'extinguishFire', fieldId: 'USSR:0,0' });
   });
 
   it('rejects anything that could confuse the rules engine', () => {
@@ -45,6 +51,10 @@ describe('parseAction', () => {
     expect(parseAction({ type: 'takeLoan', amount: Infinity })).toBeNull();
     expect(parseAction({ type: 'takeLoan', amount: '100' })).toBeNull();
     expect(parseAction({ type: 'survey', fieldId: 42 })).toBeNull();
+    expect(parseAction({ type: 'sabotage', target: 'Shell', kind: 'fire' })).toBeNull();
+    expect(parseAction({ type: 'sabotage', target: 'Transoil', kind: 'bomb' })).toBeNull();
+    expect(parseAction({ type: 'setSecurity', on: 'yes' })).toBeNull();
+    expect(parseAction({ type: 'acceptContract', contractId: 7 })).toBeNull();
   });
 });
 

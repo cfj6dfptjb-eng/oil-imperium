@@ -1,35 +1,155 @@
-import { REGIONS } from '../constants.js';
+import { REGIONS, type Region } from '../constants.js';
 import { Rng } from '../rng.js';
-import { activePlayers, marketShare, netWorth } from './economy.js';
+import { refreshContractOffers } from './contracts.js';
+import { activePlayers, marketShare, netWorth, shippingLeft } from './economy.js';
 import { REGION_DATA, RULES } from './rules.js';
-import type { GameEvent, GameState, Player } from './types.js';
+import type { GameEvent, GameState, NewsKind, Player, SabotageKind } from './types.js';
 
 /**
  * Month-end resolution, run once every company has ended its turn. Mutates
- * the state it is given (callers pass a fresh copy). Order: drilling,
- * production, costs and interest, oil price, bankruptcy, victory check.
+ * the state it is given (callers pass a fresh copy). Order: sabotage,
+ * drilling, fires, production, contract deliveries, costs and interest, oil
+ * price, world news, new contract offers, victory check.
  */
 export function resolveMonth(state: GameState): void {
   const rng = new Rng(state.rngState);
   const events: GameEvent[] = [];
   const players = activePlayers(state);
+  // Only spot market sales move the price; contract oil is already spoken for.
+  const spotSold = state.players.reduce((sum, p) => sum + p.soldThisMonth, 0);
 
+  for (const player of players) carryOutPlots(state, player, rng, events);
   advanceDrilling(state, events);
+  burnFires(state, events);
   for (const player of players) produce(state, player, events);
+  for (const player of players) deliverContracts(player, events);
   for (const player of players) payCosts(state, player, events);
-  updatePrice(state, rng);
+  updatePrice(state, spotSold, rng);
+  worldNews(state, rng, events);
 
   for (const player of players) {
     player.salesHistory.push(player.soldThisMonth);
     player.soldThisMonth = 0;
+    player.shipped = {};
     player.daysLeft = RULES.daysPerMonth;
-    player.endedTurn = false;
+    player.endedTurn = player.bankrupt;
   }
 
   state.month += 1;
+  refreshContractOffers(state, rng);
   state.rngState = rng.seed;
   checkVictory(state, events);
   state.events = events;
+}
+
+function carryOutPlots(state: GameState, player: Player, rng: Rng, events: GameEvent[]): void {
+  const plots = player.plots;
+  player.plots = [];
+  for (const { target: targetName, kind } of plots) {
+    const target = state.players.find((p) => p.company === targetName);
+    if (!target || target.bankrupt) continue;
+    const odds = target.security ? RULES.sabotageSuccessVsSecurity : RULES.sabotageSuccess;
+    if (rng.chance(odds) && strike(state, target, kind, rng, events)) {
+      events.push({ type: 'plotSucceeded', company: player.company, target: targetName, kind, secret: true });
+      continue;
+    }
+    const caught = rng.chance(RULES.sabotageCaughtChance);
+    const fine = caught ? RULES.sabotageFine : 0;
+    player.cash -= fine;
+    events.push(
+      caught
+        ? { type: 'plotFailed', company: player.company, target: targetName, kind, caught, fine }
+        : { type: 'plotFailed', company: player.company, target: targetName, kind, caught, fine, secret: true },
+    );
+  }
+}
+
+/** Carries out one act of sabotage. Returns false when there was nothing to hit. */
+function strike(state: GameState, target: Player, kind: SabotageKind, rng: Rng, events: GameEvent[]): boolean {
+  const company = target.company;
+  if (kind === 'fire') {
+    const wells = state.fields.filter((f) => f.owner === company && f.status === 'producing');
+    if (wells.length === 0) return false;
+    const field = wells[rng.int(0, wells.length - 1)];
+    field.status = 'burning';
+    field.fireMonths = 0;
+    events.push({ type: 'sabotaged', company, kind, fieldId: field.id });
+    return true;
+  }
+  if (kind === 'tanker') {
+    const regions = REGIONS.filter((r) => (target.tankers[r] ?? 0) > 0);
+    if (regions.length === 0) return false;
+    const region = regions[rng.int(0, regions.length - 1)];
+    target.tankers[region] = (target.tankers[region] ?? 0) - 1;
+    events.push({ type: 'sabotaged', company, kind, region });
+    return true;
+  }
+  const [min, max] = RULES.auditFineRange;
+  const amount = Math.round(clamp(target.cash * RULES.auditFineFraction, min, max) / 10_000) * 10_000;
+  target.cash -= amount;
+  events.push({ type: 'sabotaged', company, kind, amount });
+  return true;
+}
+
+function burnFires(state: GameState, events: GameEvent[]): void {
+  for (const field of state.fields) {
+    if (field.status !== 'burning' || !field.owner) continue;
+    field.fireMonths += 1;
+    field.reserves -= Math.round(field.reserves * RULES.fireLossRate);
+    if (field.fireMonths < RULES.fireBurnOutMonths) continue;
+    field.status = field.reserves > 0 ? 'producing' : 'depleted';
+    field.fireMonths = 0;
+    events.push({ type: 'fireOut', company: field.owner, fieldId: field.id });
+  }
+}
+
+/** Delivers contract oil from storage, as far as stock and shipping allow, and settles up. */
+function deliverContracts(player: Player, events: GameEvent[]): void {
+  for (const contract of player.contracts) {
+    let delivered = 0;
+    for (const region of REGIONS) {
+      const take = Math.min(contract.barrelsPerMonth - delivered, player.stored[region] ?? 0, shippingLeft(player, region));
+      if (take <= 0) continue;
+      player.stored[region] = (player.stored[region] ?? 0) - take;
+      player.shipped[region] = (player.shipped[region] ?? 0) + take;
+      delivered += take;
+    }
+    const missing = contract.barrelsPerMonth - delivered;
+    const revenue = Math.round(delivered * contract.price);
+    const penalty = Math.round(missing * contract.penaltyPerBarrel);
+    player.cash += revenue - penalty;
+    player.soldThisMonth += delivered;
+    contract.monthsLeft -= 1;
+    events.push({ type: 'delivery', company: player.company, contractId: contract.id, delivered, missing, revenue, penalty, secret: true });
+  }
+  player.contracts = player.contracts.filter((c) => c.monthsLeft > 0);
+}
+
+const NEWS: { kind: NewsKind; direction: number; region?: Region }[] = [
+  { kind: 'war', direction: 1, region: 'Gulf Region' },
+  { kind: 'embargo', direction: 1 },
+  { kind: 'discovery', direction: -1 },
+  { kind: 'glut', direction: -1 },
+  { kind: 'strike', direction: 0 },
+];
+
+/** Sometimes the world makes the news: price shocks, or a strike that stops wells in one region next month. */
+function worldNews(state: GameState, rng: Rng, events: GameEvent[]): void {
+  state.strikes = [];
+  if (!rng.chance(RULES.newsChance)) return;
+  const story = NEWS[rng.int(0, NEWS.length - 1)];
+  if (story.kind === 'strike') {
+    const region = REGIONS[rng.int(0, REGIONS.length - 1)];
+    state.strikes = [region];
+    events.push({ type: 'news', kind: 'strike', region });
+    return;
+  }
+  const before = state.market.price;
+  const shock = story.direction * rng.float(...RULES.newsPriceShock);
+  state.market.price = Math.round(clamp(before + shock, RULES.minOilPrice, RULES.maxOilPrice) * 100) / 100;
+  state.market.history[state.market.history.length - 1] = state.market.price;
+  const priceChange = Math.round((state.market.price - before) * 100) / 100;
+  events.push(story.region ? { type: 'news', kind: story.kind, region: story.region, priceChange } : { type: 'news', kind: story.kind, priceChange });
 }
 
 function advanceDrilling(state: GameState, events: GameEvent[]): void {
@@ -53,6 +173,7 @@ function produce(state: GameState, player: Player, events: GameEvent[]): void {
   const pumped: Partial<Record<(typeof REGIONS)[number], number>> = {};
   for (const field of state.fields) {
     if (field.owner !== player.company || field.status !== 'producing') continue;
+    if (state.strikes.includes(field.region)) continue;
     const output = Math.min(
       field.reserves,
       Math.max(1_000, Math.round(field.reserves * RULES.productionRate)),
@@ -88,8 +209,11 @@ function payCosts(state: GameState, player: Player, events: GameEvent[]): void {
     // Wells still drilling cost another month of drilling.
     if (field.status === 'drilling') costs += REGION_DATA[field.region].drillCostPerMonth;
   }
-  const tanks = Object.values(player.tanks).reduce((a, b) => a + (b ?? 0), 0);
-  costs += tanks * RULES.tankUpkeepPerMonth;
+  const count = (record: Partial<Record<Region, number>>) => Object.values(record).reduce((a, b) => a + (b ?? 0), 0);
+  costs += count(player.tanks) * RULES.tankUpkeepPerMonth;
+  costs += count(player.tankers) * RULES.tankerUpkeepPerMonth;
+  costs += player.pipelines.length * RULES.pipelineUpkeepPerMonth;
+  if (player.security) costs += RULES.securityCostPerMonth;
   costs += Math.round(player.debt * RULES.loanInterestPerMonth);
   player.cash -= costs;
 
@@ -108,9 +232,11 @@ function payCosts(state: GameState, player: Player, events: GameEvent[]): void {
 function goBankrupt(state: GameState, player: Player, events: GameEvent[]): void {
   player.bankrupt = true;
   player.endedTurn = true;
+  player.contracts = [];
   for (const field of state.fields) {
     if (field.owner !== player.company) continue;
     field.owner = null;
+    if (field.status === 'burning') field.status = 'producing';
     if (field.status === 'drilling') {
       field.status = 'unexplored';
       field.drilled = 0;
@@ -119,8 +245,7 @@ function goBankrupt(state: GameState, player: Player, events: GameEvent[]): void
   events.push({ type: 'bankrupt', company: player.company });
 }
 
-function updatePrice(state: GameState, rng: Rng): void {
-  const sold = state.players.reduce((sum, p) => sum + p.soldThisMonth, 0);
+function updatePrice(state: GameState, sold: number, rng: Rng): void {
   const { price } = state.market;
   const next =
     price +

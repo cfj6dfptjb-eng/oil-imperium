@@ -1,6 +1,7 @@
 import { SCREEN_WIDTH, type GameEvent } from '@oil/shared';
 import type { App } from '../app.js';
 import { barrels, date, money } from '../format.js';
+import { headline, SABOTAGE_NAMES } from '../news.js';
 import { COMPANY_COLORS, PAL } from '../palette.js';
 import { standings } from '../session.js';
 import type { Ui } from '../ui.js';
@@ -62,6 +63,29 @@ function describe(event: GameEvent, me: string): [string, string] | null {
       return mine ? [`THE BANK COVERED ${money(event.amount)} OF BILLS.`, PAL.gold] : null;
     case 'bankrupt':
       return [`${who} WENT BANKRUPT!`, PAL.red];
+    case 'delivery':
+      return event.missing === 0
+        ? [`CONTRACT DELIVERED ${barrels(event.delivered)}: ${money(event.revenue)}`, PAL.green]
+        : [`CONTRACT SHORT ${barrels(event.missing)}: PENALTY ${money(event.penalty)}`, PAL.red];
+    case 'plotSucceeded':
+      return [`THE AGENT REPORTS: ${SABOTAGE_NAMES[event.kind]} AT ${event.target.toUpperCase()}.`, PAL.green];
+    case 'plotFailed':
+      if (mine) {
+        return event.caught
+          ? [`YOUR AGENT WAS CAUGHT! FINED ${money(event.fine)}.`, PAL.red]
+          : ['YOUR AGENT FAILED BUT GOT AWAY.', PAL.gold];
+      }
+      return [headline(event) ?? '', PAL.gold];
+    case 'sabotaged':
+      if (mine) {
+        const what = event.kind === 'fire' ? 'ONE OF YOUR WELLS IS ON FIRE!' : event.kind === 'tanker' ? `A TANKER OF YOURS SANK IN ${event.region?.toUpperCase()}!` : `TAX AUDIT! FINED ${money(event.amount ?? 0)}.`;
+        return [what, PAL.red];
+      }
+      return [headline(event) ?? '', PAL.greyLight];
+    case 'fireOut':
+      return mine ? ['A FIRE AT YOUR WELL HAS BURNED OUT.', PAL.gold] : null;
+    case 'news':
+      return [headline(event) ?? '', PAL.white];
     case 'gameOver':
       return null;
   }

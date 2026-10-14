@@ -1,57 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import type { Company, Region } from '../constants.js';
 import { applyAction } from './actions.js';
 import { netWorth } from './economy.js';
 import { REGION_DATA, RULES } from './rules.js';
-import { CLASSIC_MAP_SEED, createGame } from './setup.js';
-import type { Action, Field, GameConfig, GameState } from './types.js';
+import { A, act, B, dryField, endMonth, GULF, newGame, oilField, player, strikeOil } from './test-helpers.js';
 import { viewFor } from './view.js';
-
-const A: Company = 'Interoil';
-const B: Company = 'Transoil';
-const GULF: Region = 'Gulf Region';
-
-function newGame(overrides: Partial<GameConfig> = {}): GameState {
-  return createGame({ goal: 'timeLimit', companies: [A, B], seed: 1, mapSeed: CLASSIC_MAP_SEED, ...overrides });
-}
-
-/** Applies an action and fails the test if it is rejected. */
-function act(state: GameState, company: Company, action: Action): GameState {
-  const result = applyAction(state, company, action);
-  if (!result.ok) throw new Error(`${company} ${action.type}: ${result.error}`);
-  return result.state;
-}
-
-function endMonth(state: GameState): GameState {
-  for (const p of state.players) if (!p.bankrupt && !p.endedTurn) state = act(state, p.company, { type: 'endTurn' });
-  return state;
-}
-
-function oilField(state: GameState, region: Region): Field {
-  const field = state.fields.find((f) => f.region === region && f.reserves > 0 && !f.owner);
-  if (!field) throw new Error(`No oil field in ${region}`);
-  return field;
-}
-
-function dryField(state: GameState): Field {
-  const field = state.fields.find((f) => f.reserves === 0 && !f.owner);
-  if (!field) throw new Error('No dry field');
-  return field;
-}
-
-function player(state: GameState, company: Company) {
-  return state.players.find((p) => p.company === company)!;
-}
-
-/** Buys a licence and a field and drills it until it produces. */
-function strikeOil(state: GameState, company: Company, region: Region): { state: GameState; field: Field } {
-  const field = oilField(state, region);
-  if (!player(state, company).licences.includes(region)) state = act(state, company, { type: 'buyLicence', region });
-  state = act(state, company, { type: 'buyField', fieldId: field.id });
-  state = act(state, company, { type: 'startDrilling', fieldId: field.id });
-  while (state.fields.find((f) => f.id === field.id)!.status === 'drilling') state = endMonth(state);
-  return { state, field: state.fields.find((f) => f.id === field.id)! };
-}
 
 describe('setup', () => {
   it('creates 20 fields in each of the 8 regions', () => {
@@ -188,6 +140,7 @@ describe('month end', () => {
   it('sells oil at the market price and records the sale', () => {
     let { state } = strikeOil(newGame(), A, GULF);
     state = act(state, A, { type: 'buildTank', region: GULF });
+    state = act(state, A, { type: 'buildPipeline', region: GULF });
     state = endMonth(state);
     const stored = player(state, A).stored[GULF]!;
     const cashBefore = player(state, A).cash;
@@ -231,6 +184,7 @@ describe('month end', () => {
     const quiet = endMonth(newGame());
     let busy = newGame();
     busy.players[0].stored[GULF] = 5_000_000;
+    busy.players[0].tankers[GULF] = 100;
     busy = act(busy, A, { type: 'sellOil', region: GULF, barrels: 5_000_000 });
     busy = endMonth(busy);
     expect(busy.market.price).toBeLessThan(quiet.market.price);
@@ -275,6 +229,7 @@ describe('victory', () => {
     state.players[0].salesHistory = [200_000, 200_000];
     state.players[1].salesHistory = [10_000, 10_000];
     state.players[0].stored[GULF] = 100_000;
+    state.players[0].pipelines.push(GULF);
     state = act(state, A, { type: 'sellOil', region: GULF, barrels: 100_000 });
     state = endMonth(state);
     expect(state).toMatchObject({ over: true, winner: A });

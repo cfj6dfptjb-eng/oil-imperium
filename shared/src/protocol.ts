@@ -1,9 +1,10 @@
 import { COMPANIES, PROTOCOL_VERSION, REGIONS, type Company } from './constants.js';
-import type { Action, GameEvent, VictoryGoal } from './game/types.js';
+import type { Action, GameEvent, SabotageKind, VictoryGoal } from './game/types.js';
 import type { PlayerView } from './game/view.js';
 
 export const GOALS: VictoryGoal[] = ['timeLimit', 'survival', 'marketShare', 'money'];
 export const MAX_NAME_LENGTH = 12;
+export const SABOTAGE_KINDS: SabotageKind[] = ['fire', 'tanker', 'books'];
 
 export interface SeatInfo {
   company: Company;
@@ -101,10 +102,21 @@ export function parseAction(data: unknown): Action | null {
     case 'buyLicence':
       return isRegion(data.region) ? { type: 'buyLicence', region: data.region as never } : null;
     case 'buildTank':
-      return isRegion(data.region) ? { type: 'buildTank', region: data.region as never } : null;
+    case 'buildPipeline':
+    case 'buyTanker':
+      return isRegion(data.region) ? { type: data.type, region: data.region as never } : null;
+    case 'acceptContract':
+      return isId(data.contractId) ? { type: 'acceptContract', contractId: data.contractId as string } : null;
+    case 'sabotage':
+      return isCompany(data.target) && SABOTAGE_KINDS.includes(data.kind as never)
+        ? { type: 'sabotage', target: data.target, kind: data.kind as never }
+        : null;
+    case 'setSecurity':
+      return typeof data.on === 'boolean' ? { type: 'setSecurity', on: data.on } : null;
     case 'survey':
     case 'buyField':
     case 'startDrilling':
+    case 'extinguishFire':
       return isId(data.fieldId) ? { type: data.type, fieldId: data.fieldId as string } : null;
     case 'sellOil':
       return isRegion(data.region) && isAmount(data.barrels)

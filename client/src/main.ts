@@ -4,7 +4,9 @@ import { Connection } from './connection.js';
 import { Online } from './online.js';
 import { isFinished } from './session.js';
 import { drawJoin, drawLobby, drawMenu } from './screens/menu.js';
+import { drawAgent } from './screens/agent.js';
 import { drawBank } from './screens/bank.js';
+import { drawContracts } from './screens/contracts.js';
 import { drawMarket } from './screens/market.js';
 import { drawOffice } from './screens/office.js';
 import { drawRegion } from './screens/region.js';
@@ -112,12 +114,14 @@ const screens: Record<App['screen'], (ui: Ui, app: App) => void> = {
   world: drawWorld,
   region: drawRegion,
   market: drawMarket,
+  contracts: drawContracts,
+  agent: drawAgent,
   bank: drawBank,
   report: drawReport,
   gameover: drawGameOver,
 };
 
-const GAME_SCREENS: App['screen'][] = ['office', 'world', 'region', 'market', 'bank', 'report'];
+const GAME_SCREENS: App['screen'][] = ['office', 'world', 'region', 'market', 'contracts', 'agent', 'bank', 'report'];
 
 /** Moves between screens when the game itself changes: it starts, a month passes, or it ends. */
 function followGame(): void {
