@@ -2,15 +2,16 @@ import { RULES, SCREEN_WIDTH } from '@oil/shared';
 import { act, type App } from '../app.js';
 import { money } from '../format.js';
 import { PAL } from '../palette.js';
+import { drawBackdrop } from '../art/backdrops.js';
 import type { Ui } from '../ui.js';
-import { backButton, drawFooter, drawHud, FOOTER_Y, HUD_HEIGHT } from './hud.js';
+import { backButton, drawFooter, drawHud, HUD_HEIGHT } from './hud.js';
 
 export function drawBank(ui: Ui, app: App): void {
   const { ctx } = ui;
   const me = app.game!.view!.you;
-  ctx.fillStyle = PAL.greenDark;
-  ctx.fillRect(0, HUD_HEIGHT, SCREEN_WIDTH, FOOTER_Y - HUD_HEIGHT);
-  ui.big('THE BANK', SCREEN_WIDTH / 2, HUD_HEIGHT + 6, PAL.gold, 'center');
+  drawBackdrop(ctx, 'marble');
+  ui.big('THE BANK', SCREEN_WIDTH / 2, HUD_HEIGHT + 8, PAL.gold, 'center');
+  ui.panel(24, 42, SCREEN_WIDTH - 48, 160, PAL.greenDark);
 
   const rows: [string, string][] = [
     ['CASH', money(me.cash)],

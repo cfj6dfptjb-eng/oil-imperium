@@ -21,10 +21,16 @@ const ctx = canvas.getContext('2d')!;
 ctx.imageSmoothingEnabled = false;
 const ui = new Ui(ctx);
 
-let scale = 1;
-/** Scale the 320x256 screen by the largest whole number that fits the window. */
+/**
+ * Scale the 320x256 screen as large as the window allows. Whole device
+ * pixels per game pixel keep it crisp; on small screens, where that would
+ * leave it tiny, it fills the window instead.
+ */
 function fit(): void {
-  scale = Math.max(1, Math.floor(Math.min(innerWidth / SCREEN_WIDTH, innerHeight / SCREEN_HEIGHT)));
+  const dpr = devicePixelRatio || 1;
+  const fill = Math.min(innerWidth / SCREEN_WIDTH, innerHeight / SCREEN_HEIGHT);
+  const crisp = Math.floor(fill * dpr) / dpr;
+  const scale = crisp >= fill * 0.85 ? crisp : fill;
   canvas.style.width = `${SCREEN_WIDTH * scale}px`;
   canvas.style.height = `${SCREEN_HEIGHT * scale}px`;
 }

@@ -13,6 +13,7 @@ export const PAL = {
   sandDark: amiga(0x962),
   derrick: amiga(0x211),
   gold: amiga(0xfc0),
+  goldLight: amiga(0xfe8),
   goldDark: amiga(0xa60),
   green: amiga(0x4e4),
   greenDark: amiga(0x272),
@@ -28,6 +29,10 @@ export const PAL = {
   wood: amiga(0x642),
   woodDark: amiga(0x421),
   wall: amiga(0x9a8),
+  buttonFace: amiga(0xbbb),
+  buttonShade: amiga(0x666),
+  panelLight: amiga(0x68b),
+  panelDark: amiga(0x012),
   sky: [0x013, 0x024, 0x136, 0x247, 0x358, 0x469, 0x57a, 0x88b, 0xa8a, 0xc98, 0xea7, 0xfb6].map(amiga),
 };
 

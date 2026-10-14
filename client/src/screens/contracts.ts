@@ -2,6 +2,7 @@ import { RULES, SCREEN_WIDTH, type Contract } from '@oil/shared';
 import { act, type App } from '../app.js';
 import { barrels } from '../format.js';
 import { PAL } from '../palette.js';
+import { drawBackdrop } from '../art/backdrops.js';
 import type { Ui } from '../ui.js';
 import { backButton, drawFooter, drawHud, FOOTER_Y, HUD_HEIGHT } from './hud.js';
 
@@ -10,8 +11,8 @@ export function drawContracts(ui: Ui, app: App): void {
   const { ctx } = ui;
   const view = app.game!.view!;
   const me = view.you;
-  ctx.fillStyle = PAL.blueDark;
-  ctx.fillRect(0, HUD_HEIGHT, SCREEN_WIDTH, FOOTER_Y - HUD_HEIGHT);
+  drawBackdrop(ctx, 'desk');
+  ui.panel(4, HUD_HEIGHT + 22, SCREEN_WIDTH - 8, FOOTER_Y - HUD_HEIGHT - 42);
   ui.big('SUPPLY CONTRACTS', SCREEN_WIDTH / 2, HUD_HEIGHT + 4, PAL.gold, 'center');
 
   let y = HUD_HEIGHT + 26;
