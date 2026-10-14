@@ -4,25 +4,28 @@ import {
   COMPANIES,
   createGame,
   playAiTurn,
+  viewFor,
   type Action,
   type Company,
-  type GameEvent,
   type GameState,
+  type PlayerView,
   type VictoryGoal,
 } from '@oil/shared';
+import type { GameSession } from './session.js';
 
 /**
  * A single-player game running entirely in the browser: one human company and
  * computer opponents for the other seats. Computer companies take their turn
  * at the start of each month, then wait for the human to end the month.
  */
-export class LocalGame {
+export class LocalGame implements GameSession {
+  readonly online = false;
+  readonly waitingFor: Company[] = [];
   state: GameState;
-  /** Events from the month that just ended, for the monthly report. */
-  lastEvents: GameEvent[] = [];
+  private cachedView?: { state: GameState; view: PlayerView };
 
   constructor(
-    readonly human: Company,
+    readonly company: Company,
     goal: VictoryGoal,
     seed = Math.floor(Math.random() * 2 ** 31),
   ) {
@@ -30,16 +33,15 @@ export class LocalGame {
     this.playComputers();
   }
 
-  get me() {
-    return this.state.players.find((p) => p.company === this.human)!;
+  get view(): PlayerView {
+    if (this.cachedView?.state !== this.state) {
+      this.cachedView = { state: this.state, view: viewFor(this.state, this.company) };
+    }
+    return this.cachedView.view;
   }
 
-  /** Runs an action for the human player. Returns an error message, or null on success. */
-  perform(action: Action): string | null {
-    const result = applyAction(this.state, this.human, action);
-    if (!result.ok) return result.error;
-    this.state = result.state;
-    return null;
+  get me() {
+    return this.state.players.find((p) => p.company === this.company)!;
   }
 
   /** True once the game is over or the human's company has gone bankrupt. */
@@ -47,17 +49,25 @@ export class LocalGame {
     return this.state.over || this.me.bankrupt;
   }
 
+  perform(action: Action, done?: (error: string | null) => void): void {
+    const month = this.state.month;
+    const result = applyAction(this.state, this.company, action);
+    if (result.ok) {
+      this.state = result.state;
+      // A new month has started: the computers play it straight away.
+      if (this.state.month !== month && !this.finished) this.playComputers();
+    }
+    done?.(result.ok ? null : result.error);
+  }
+
   /** Ends the human's month, resolves it and lets the computers play the next one. */
   endMonth(): void {
-    const month = this.state.month;
     this.perform({ type: 'endTurn' });
-    if (this.state.month !== month) this.lastEvents = this.state.events;
-    if (!this.finished) this.playComputers();
   }
 
   private playComputers(): void {
     for (const p of this.state.players) {
-      if (p.company !== this.human && !this.state.over) this.state = playAiTurn(this.state, p.company);
+      if (p.company !== this.company && !this.state.over) this.state = playAiTurn(this.state, p.company);
     }
   }
 }

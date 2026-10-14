@@ -9,7 +9,7 @@ User=oil
 WorkingDirectory=/opt/oil-imperium
 Environment=NODE_ENV=production
 Environment=PORT=3000
-ExecStart=/usr/bin/node server/dist/index.js
+ExecStart=/usr/bin/node --disable-warning=ExperimentalWarning server/dist/index.js
 Restart=on-failure
 RestartSec=5
 

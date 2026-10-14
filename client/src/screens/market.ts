@@ -1,5 +1,5 @@
 import { REGIONS, RULES, SCREEN_WIDTH } from '@oil/shared';
-import { say, type App } from '../app.js';
+import { act, type App } from '../app.js';
 import { barrels, money } from '../format.js';
 import { PAL } from '../palette.js';
 import type { Ui } from '../ui.js';
@@ -8,9 +8,7 @@ import { backButton, drawFooter, drawHud, FOOTER_Y, HUD_HEIGHT } from './hud.js'
 /** The newspaper: oil price history and selling stored oil. */
 export function drawMarket(ui: Ui, app: App): void {
   const { ctx } = ui;
-  const game = app.game!;
-  const { market } = game.state;
-  const me = game.me;
+  const { market, you: me } = app.game!.view!;
 
   ctx.fillStyle = PAL.white;
   ctx.fillRect(0, HUD_HEIGHT, SCREEN_WIDTH, FOOTER_Y - HUD_HEIGHT);
@@ -49,8 +47,7 @@ export function drawMarket(ui: Ui, app: App): void {
     any = true;
     ui.text(`${region.toUpperCase()}: ${barrels(stored)} = ${money(stored * market.price)}`, 8, y + 2, PAL.black);
     ui.button(SCREEN_WIDTH - 60, y, 'SELL', () => {
-      const error = game.perform({ type: 'sellOil', region, barrels: stored });
-      say(app, error ?? `Sold ${barrels(stored)} for ${money(stored * market.price)}`, !!error);
+      act(app, { type: 'sellOil', region, barrels: stored }, `Sold ${barrels(stored)} for ${money(stored * market.price)}`);
     }, { w: 40 });
     y += 14;
   }

@@ -1,5 +1,5 @@
-import { FIELD_GRID, REGION_DATA, RULES, SCREEN_WIDTH, viewFor, type Field } from '@oil/shared';
-import { say, type App } from '../app.js';
+import { FIELD_GRID, REGION_DATA, RULES, SCREEN_WIDTH, type Action, type Field } from '@oil/shared';
+import { act, type App } from '../app.js';
 import { barrels, money } from '../format.js';
 import { COMPANY_COLORS, PAL } from '../palette.js';
 import type { Ui } from '../ui.js';
@@ -17,7 +17,7 @@ export function drawRegion(ui: Ui, app: App): void {
   const game = app.game!;
   const region = app.region!;
   const data = REGION_DATA[region];
-  const view = viewFor(game.state, game.human);
+  const view = game.view!;
   const me = view.you;
   const licensed = me.licences.includes(region);
   const fields = view.fields.filter((f) => f.region === region);
@@ -31,7 +31,7 @@ export function drawRegion(ui: Ui, app: App): void {
   for (const field of fields) {
     const x = GRID_X + field.col * (TILE_W + 1);
     const y = GRID_Y + field.row * (TILE_H + 1);
-    drawTile(ctx, field, x, y, game.human, app.frame);
+    drawTile(ctx, field, x, y, game.company, app.frame);
     if (surveys.has(field.id) && field.status === 'unexplored') {
       const est = surveys.get(field.id)!;
       ui.text(est ? `${Math.round(est / 100_000) / 10}M` : 'DRY', x + 2, y + TILE_H - 10, est ? PAL.white : PAL.red);
@@ -53,10 +53,7 @@ export function drawRegion(ui: Ui, app: App): void {
     y += 10;
   };
 
-  const run = (action: Parameters<typeof game.perform>[0], ok: string) => {
-    const error = game.perform(action);
-    say(app, error ?? ok, !!error);
-  };
+  const run = (action: Action, ok: string) => act(app, action, ok);
 
   if (!licensed) {
     line('NO LICENCE HERE', PAL.red);
@@ -90,10 +87,10 @@ export function drawRegion(ui: Ui, app: App): void {
     line(field.owner ? `OWNER: ${field.owner.toUpperCase()}` : `PRICE: ${money(field.price)}`,
       field.owner ? COMPANY_COLORS[field.owner] : PAL.white);
     line(`STATUS: ${field.status.toUpperCase()}`);
-    if (field.owner === game.human && field.status === 'drilling') {
+    if (field.owner === game.company && field.status === 'drilling') {
       line(`DRILLED ${field.drilled} M`);
     }
-    if (field.owner === game.human && field.status === 'producing') {
+    if (field.owner === game.company && field.status === 'producing') {
       line(`RESERVES ${barrels(field.reserves)}`, PAL.green);
     }
     const est = surveys.get(field.id);
@@ -106,7 +103,7 @@ export function drawRegion(ui: Ui, app: App): void {
         y += 14;
         ui.button(PANEL_X, y, 'BUY FIELD', () => run({ type: 'buyField', fieldId: field.id }, 'Field bought'));
         y += 14;
-      } else if (field.owner === game.human) {
+      } else if (field.owner === game.company) {
         ui.button(PANEL_X, y, `DRILL ${money(data.drillCostPerMonth)}/MO`, () =>
           run({ type: 'startDrilling', fieldId: field.id }, 'Drilling started'),
         );

@@ -26,8 +26,8 @@ const LAND: [number, number, number, number][] = [
 
 export function drawWorld(ui: Ui, app: App): void {
   const { ctx } = ui;
-  const me = app.game!.me;
-  const fields = app.game!.state.fields;
+  const me = app.game!.view!.you;
+  const fields = app.game!.view!.fields;
   ctx.fillStyle = PAL.ocean;
   ctx.fillRect(0, HUD_HEIGHT, SCREEN_WIDTH, FOOTER_Y - HUD_HEIGHT);
   ctx.fillStyle = PAL.land;

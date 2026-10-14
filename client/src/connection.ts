@@ -2,10 +2,12 @@ import type { ClientMessage, ServerMessage } from '@oil/shared';
 
 export type ConnectionState = 'connecting' | 'online' | 'offline';
 
-/** WebSocket wrapper that reconnects and measures round-trip latency. */
+/** WebSocket wrapper that reconnects, measures latency and passes messages on. */
 export class Connection {
   state: ConnectionState = 'connecting';
   latencyMs: number | null = null;
+  /** Called for every message from the server, including each new 'hello' after a reconnect. */
+  onMessage: (msg: ServerMessage) => void = () => {};
   private socket?: WebSocket;
   private pingTimer?: number;
 
@@ -30,22 +32,23 @@ export class Connection {
       case 'hello':
         this.state = 'online';
         this.ping();
+        window.clearInterval(this.pingTimer);
         this.pingTimer = window.setInterval(() => this.ping(), 5000);
         break;
       case 'pong':
         this.latencyMs = Math.round(performance.now() - msg.t);
-        break;
-      case 'error':
-        console.warn('Server error:', msg.message);
-        break;
+        return;
     }
+    this.onMessage(msg);
   }
 
   private ping(): void {
     this.send({ type: 'ping', t: performance.now() });
   }
 
-  send(msg: ClientMessage): void {
-    if (this.socket?.readyState === WebSocket.OPEN) this.socket.send(JSON.stringify(msg));
+  send(msg: ClientMessage): boolean {
+    if (this.socket?.readyState !== WebSocket.OPEN) return false;
+    this.socket.send(JSON.stringify(msg));
+    return true;
   }
 }

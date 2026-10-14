@@ -7,7 +7,9 @@ const port = Number(process.env.PORT ?? 3000);
 const host = process.env.HOST ?? '0.0.0.0';
 const staticDir = process.env.STATIC_DIR ?? path.resolve(here, '../../client/dist');
 
-const server = createGameServer({ staticDir });
+const dbPath = process.env.DB_PATH ?? path.resolve(here, '../../data/oil-imperium.db');
+
+const server = createGameServer({ staticDir, dbPath });
 server.listen(port, host, () => {
   console.log(`Oil Imperium server listening on http://${host}:${port}`);
 });

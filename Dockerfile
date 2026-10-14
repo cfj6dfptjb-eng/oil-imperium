@@ -20,6 +20,9 @@ COPY client/package.json client/
 RUN npm ci --omit=dev --workspace server && npm cache clean --force
 COPY --from=build /app/server/dist server/dist
 COPY --from=build /app/client/dist client/dist
+RUN mkdir -p data && chown node:node data
 USER node
 EXPOSE 3000
-CMD ["node", "server/dist/index.js"]
+# Saved games live here; mount a volume to keep them across container rebuilds.
+VOLUME /app/data
+CMD ["node", "--disable-warning=ExperimentalWarning", "server/dist/index.js"]

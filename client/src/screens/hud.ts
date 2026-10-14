@@ -9,13 +9,13 @@ export const FOOTER_Y = SCREEN_HEIGHT - 12;
 
 /** Top status bar: company, date, cash and days left. */
 export function drawHud(ui: Ui, app: App): void {
-  const game = app.game!;
-  const me = game.me;
+  const view = app.game!.view!;
+  const me = view.you;
   const { ctx } = ui;
   ctx.fillStyle = PAL.black;
   ctx.fillRect(0, 0, SCREEN_WIDTH, HUD_HEIGHT);
   ui.text(me.company.toUpperCase(), 3, 2, COMPANY_COLORS[me.company]);
-  ui.text(date(game.state.month), 110, 2, PAL.white);
+  ui.text(date(view.month), 110, 2, PAL.white);
   ui.text(money(me.cash), 222, 2, me.cash < 200_000 ? PAL.red : PAL.green, 'right');
   ui.text(`${me.daysLeft}D`, SCREEN_WIDTH - 3, 2, me.daysLeft < 5 ? PAL.red : PAL.white, 'right');
 }
