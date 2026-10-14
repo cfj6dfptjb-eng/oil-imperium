@@ -7,10 +7,9 @@ oil business strategy.
 
 See [docs/design.md](docs/design.md) for the full design and milestones.
 
-> **Status:** milestone 1. The rules engine in `shared/src/game/` plays full games in
-> tests (licences, surveys, drilling, storage, sales, loans, oil price, bankruptcy and
-> all four victory goals). There is no game screen yet; the title screen only checks
-> the server connection.
+> **Status:** milestone 2. A full single-player game against three computer
+> companies runs in the browser: office hub, world map, region fields, oil market,
+> bank and monthly reports. Online multiplayer comes in milestone 3.
 
 ## Project layout
 

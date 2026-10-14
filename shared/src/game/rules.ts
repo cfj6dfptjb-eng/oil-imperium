@@ -15,7 +15,7 @@ export const RULES = {
   /** Total sales in the window must reach this before the share goal can be won. */
   marketShareMinBarrels: 300_000,
 
-  companyOverheadPerMonth: 50_000,
+  companyOverheadPerMonth: 100_000,
 
   surveyCost: 25_000,
   /** Survey estimates are within this fraction of the true reserves. */
@@ -26,10 +26,10 @@ export const RULES = {
   /** Drilling speed multiplier in the money goal game, which slows drilling. */
   moneyGoalDrillFactor: 0.5,
 
-  wellUpkeepPerMonth: 10_000,
+  wellUpkeepPerMonth: 40_000,
   /** Fraction of a field's remaining reserves pumped each month. */
-  productionRate: 0.04,
-  maxWellOutputPerMonth: 80_000,
+  productionRate: 0.025,
+  maxWellOutputPerMonth: 40_000,
 
   tankCapacity: 50_000,
   tankCost: 100_000,
@@ -132,12 +132,12 @@ export const REGION_DATA: Record<Region, RegionData> = {
     productionCost: 5,
   },
   'Gulf Region': {
-    licenceCost: 900_000,
-    fieldPrice: [500_000, 1_200_000],
+    licenceCost: 1_500_000,
+    fieldPrice: [700_000, 1_500_000],
     drillCostPerMonth: 100_000,
     depth: [500, 1_500],
-    oilChance: 0.75,
-    reserves: [1_500_000, 6_000_000],
+    oilChance: 0.65,
+    reserves: [1_000_000, 4_000_000],
     productionCost: 2,
   },
   Indochina: {
