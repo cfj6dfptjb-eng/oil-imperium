@@ -1,0 +1,14 @@
+{
+  "name": "@oil/server",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "esbuild src/index.ts --bundle --platform=node --format=esm --target=node22 --external:ws --outfile=dist/index.js"
+  },
+  "dependencies": {
+    "@oil/shared": "*",
+    "ws": "8.22.0"
+  }
+}
