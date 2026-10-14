@@ -1,0 +1,7 @@
+node_modules/
+dist/
+*.db
+*.db-journal
+.env
+# Original game assets must never be committed (see docs/design.md section 4)
+assets/classic/
