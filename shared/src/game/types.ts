@@ -12,7 +12,7 @@ export interface GameConfig {
   mapSeed: number;
 }
 
-export type FieldStatus = 'unexplored' | 'drilling' | 'producing' | 'dry' | 'depleted';
+export type FieldStatus = 'unexplored' | 'drilling' | 'producing' | 'burning' | 'dry' | 'depleted';
 
 export interface Field {
   id: string;
@@ -28,6 +28,8 @@ export interface Field {
   status: FieldStatus;
   /** Metres drilled so far. */
   drilled: number;
+  /** Months a burning well has been on fire. */
+  fireMonths: number;
 }
 
 export interface SurveyReport {
@@ -52,8 +54,42 @@ export interface Player {
   surveys: SurveyReport[];
   /** Barrels sold per month, most recent last. */
   salesHistory: number[];
+  /** Barrels sold or delivered this month (market share counts both). */
   soldThisMonth: number;
+  /** Regions where the company owns a pipeline. */
+  pipelines: Region[];
+  /** Tankers per region. */
+  tankers: Partial<Record<Region, number>>;
+  /** Barrels shipped out of each region this month, against its shipping capacity. */
+  shipped: Partial<Record<Region, number>>;
+  /** Whether a security company guards this company's wells, tankers and books. */
+  security: boolean;
+  /** Supply contracts this company has signed. Hidden from rivals. */
+  contracts: Contract[];
+  /** Sabotage ordered this month, carried out at month end. Hidden from rivals. */
+  plots: Plot[];
 }
+
+/** A supply contract: a fixed amount of oil each month at a fixed price. */
+export interface Contract {
+  id: string;
+  /** Who the oil goes to, for flavour. */
+  buyer: string;
+  barrelsPerMonth: number;
+  price: number;
+  monthsLeft: number;
+  /** Paid for every barrel that is not delivered. */
+  penaltyPerBarrel: number;
+}
+
+export type SabotageKind = 'fire' | 'tanker' | 'books';
+
+export interface Plot {
+  target: Company;
+  kind: SabotageKind;
+}
+
+export type NewsKind = 'war' | 'embargo' | 'discovery' | 'glut' | 'strike';
 
 export interface Market {
   price: number;
@@ -68,6 +104,23 @@ export type GameEvent =
   | { type: 'overflow'; company: Company; region: Region; barrels: number }
   | { type: 'autoLoan'; company: Company; amount: number }
   | { type: 'bankrupt'; company: Company }
+  /** Public: what the newspaper reports. The saboteur is not named. */
+  | { type: 'sabotaged'; company: Company; kind: SabotageKind; fieldId?: string; region?: Region; amount?: number }
+  | { type: 'plotSucceeded'; company: Company; target: Company; kind: SabotageKind; secret: true }
+  /** Public when the saboteur is caught; otherwise only the saboteur hears about it. */
+  | { type: 'plotFailed'; company: Company; target: Company; kind: SabotageKind; caught: boolean; fine: number; secret?: true }
+  | { type: 'fireOut'; company: Company; fieldId: string }
+  | {
+      type: 'delivery';
+      company: Company;
+      contractId: string;
+      delivered: number;
+      missing: number;
+      revenue: number;
+      penalty: number;
+      secret: true;
+    }
+  | { type: 'news'; kind: NewsKind; region?: Region; priceChange?: number }
   | { type: 'gameOver'; winner: Company | null; reason: VictoryGoal };
 
 export interface GameState {
@@ -78,7 +131,12 @@ export interface GameState {
   players: Player[];
   fields: Field[];
   market: Market;
-  /** Events from the last month-end resolution. */
+  /** Supply contracts on offer this month; first come, first served. */
+  contractOffers: Contract[];
+  nextContractId: number;
+  /** Regions where oil workers are on strike this month, so wells there stand still. */
+  strikes: Region[];
+  /** Events from the last month-end resolution. Events marked secret are only shown to their company. */
   events: GameEvent[];
   winner: Company | null;
   over: boolean;
@@ -93,6 +151,12 @@ export type Action =
   | { type: 'sellOil'; region: Region; barrels: number }
   | { type: 'takeLoan'; amount: number }
   | { type: 'repayLoan'; amount: number }
+  | { type: 'buildPipeline'; region: Region }
+  | { type: 'buyTanker'; region: Region }
+  | { type: 'acceptContract'; contractId: string }
+  | { type: 'sabotage'; target: Company; kind: SabotageKind }
+  | { type: 'setSecurity'; on: boolean }
+  | { type: 'extinguishFire'; fieldId: string }
   | { type: 'endTurn' };
 
 export type ActionResult =

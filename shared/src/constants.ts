@@ -1,5 +1,5 @@
 export const GAME_TITLE = 'Oil Imperium';
-export const PROTOCOL_VERSION = 1;
+export const PROTOCOL_VERSION = 2;
 
 /** Logical screen size, matching an Amiga PAL low-res display. */
 export const SCREEN_WIDTH = 320;

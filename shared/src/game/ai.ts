@@ -1,5 +1,6 @@
 import { COMPANIES, REGIONS, type Company, type Region } from '../constants.js';
 import { applyAction } from './actions.js';
+import { shippingCapacity, shippingLeft } from './economy.js';
 import { REGION_DATA, RULES } from './rules.js';
 import type { Action, GameState } from './types.js';
 import { viewFor, type PlayerView } from './view.js';
@@ -29,7 +30,17 @@ export function playAiTurn(state: GameState, company: Company): GameState {
 }
 
 function chooseAction(view: PlayerView, tried: Set<string>): Action | null {
-  const candidates = [...sellOil(view), ...buildTanks(view), ...manageDebt(view), ...expand(view)];
+  const candidates = [
+    ...fightFires(view),
+    ...sellOil(view),
+    ...buildTransport(view),
+    ...buildTanks(view),
+    ...signContracts(view),
+    ...manageDebt(view),
+    ...hireSecurity(view),
+    ...sabotage(view),
+    ...expand(view),
+  ];
   return candidates.find((a) => !tried.has(JSON.stringify(a))) ?? null;
 }
 
@@ -38,16 +49,79 @@ function sellOil(view: PlayerView): Action[] {
   const recent = market.history.slice(-6);
   const average = recent.reduce((a, b) => a + b, 0) / recent.length;
   const actions: Action[] = [];
+  // Keep enough shipping free for this month's contract deliveries.
+  let contractNeed = you.contracts.reduce((sum, c) => sum + c.barrelsPerMonth, 0);
   for (const region of REGIONS) {
+    const left = shippingLeft(you, region);
+    const keep = Math.min(contractNeed, left);
+    contractNeed -= keep;
     const stored = you.stored[region] ?? 0;
-    if (stored <= 0) continue;
+    const barrels = Math.min(stored, left - keep);
+    if (barrels <= 0) continue;
     const capacity = (you.tanks[region] ?? 0) * RULES.tankCapacity;
     const nearlyFull = stored >= capacity * 0.6;
     if (market.price >= average * 0.95 || nearlyFull || you.cash < CASH_BUFFER) {
-      actions.push({ type: 'sellOil', region, barrels: stored });
+      actions.push({ type: 'sellOil', region, barrels });
     }
   }
   return actions;
+}
+
+/** Barrels a month this company's wells in a region can be expected to pump. */
+function expectedOutput(view: PlayerView, region?: Region): number {
+  const wells = view.fields.filter(
+    (f) => f.owner === view.you.company && (!region || f.region === region) && (f.status === 'producing' || f.status === 'drilling'),
+  );
+  return wells.length * RULES.maxWellOutputPerMonth;
+}
+
+function fightFires(view: PlayerView): Action[] {
+  if (view.you.cash < RULES.extinguishCost + CASH_BUFFER / 2) return [];
+  return view.fields
+    .filter((f) => f.owner === view.you.company && f.status === 'burning')
+    .map((f) => ({ type: 'extinguishFire', fieldId: f.id }));
+}
+
+function buildTransport(view: PlayerView): Action[] {
+  const { you } = view;
+  const actions: Action[] = [];
+  for (const region of REGIONS) {
+    const output = expectedOutput(view, region);
+    if (output === 0 || shippingCapacity(you, region) >= output) continue;
+    const pipeline = REGION_DATA[region].pipelineCost;
+    if (!you.pipelines.includes(region) && you.cash > pipeline + CASH_BUFFER) {
+      actions.push({ type: 'buildPipeline', region });
+    } else if (you.cash > RULES.tankerCost + CASH_BUFFER) {
+      actions.push({ type: 'buyTanker', region });
+    }
+  }
+  return actions;
+}
+
+function signContracts(view: PlayerView): Action[] {
+  const { you, market, contractOffers } = view;
+  if (you.contracts.length >= RULES.maxContracts - 1) return [];
+  const committed = you.contracts.reduce((sum, c) => sum + c.barrelsPerMonth, 0);
+  const spare = expectedOutput(view) * 0.6 - committed;
+  return contractOffers
+    .filter((c) => c.price >= market.price && c.barrelsPerMonth <= spare)
+    .map((c) => ({ type: 'acceptContract', contractId: c.id }));
+}
+
+function hireSecurity(view: PlayerView): Action[] {
+  const { you, fields } = view;
+  const wells = fields.filter((f) => f.owner === you.company && f.status === 'producing').length;
+  return !you.security && wells >= 2 && you.cash > 2_000_000 ? [{ type: 'setSecurity', on: true }] : [];
+}
+
+/** Now and then a cash-rich computer hires saboteurs against whoever is ahead of it. */
+function sabotage(view: PlayerView): Action[] {
+  const { you, rivals, month } = view;
+  if (you.cash < 5_000_000 || (month + COMPANIES.indexOf(you.company)) % 6 !== 5) return [];
+  const leader = rivals.filter((r) => !r.bankrupt).sort((a, b) => b.netWorth - a.netWorth)[0];
+  if (!leader || leader.netWorth <= you.cash - you.debt) return [];
+  const kind = leader.producingWells > 0 ? 'fire' : leader.tankers > 0 ? 'tanker' : 'books';
+  return [{ type: 'sabotage', target: leader.company, kind }];
 }
 
 function buildTanks(view: PlayerView): Action[] {

@@ -7,10 +7,15 @@ oil business strategy.
 
 See [docs/design.md](docs/design.md) for the full design and milestones.
 
-> **Status:** milestone 3. Play single player against the computer, or host an
+> **Status:** milestone 4. Play single player against the computer, or host an
 > online game for 2 to 4 players: share the 4-letter code (or the invite link), pick
 > companies in the lobby, and everyone plays the same month at once. Empty seats are
 > played by the computer. Games are saved on the server and can be resumed.
+>
+> Oil has to be shipped out (by road, pipeline or tanker) before it can be sold.
+> Buyers phone with supply contracts, the newspaper reports world events that move
+> the price, and a shady agent will set rivals' wells on fire, sink their tankers or
+> cook their books, unless they have hired guards.
 
 ## Project layout
 

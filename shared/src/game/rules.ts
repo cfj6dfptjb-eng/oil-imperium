@@ -35,6 +35,47 @@ export const RULES = {
   tankCost: 100_000,
   tankUpkeepPerMonth: 2_000,
 
+  /** Barrels a month that leave any region by road, without a pipeline or tankers. */
+  roadCapacity: 15_000,
+  pipelineCapacity: 120_000,
+  pipelineUpkeepPerMonth: 10_000,
+  tankerCapacity: 60_000,
+  tankerCost: 400_000,
+  tankerUpkeepPerMonth: 8_000,
+
+  contractOffersPerMonth: 2,
+  maxContracts: 3,
+  /** Barrels per month range of offered contracts. */
+  contractBarrels: [20_000, 80_000],
+  contractMonths: [3, 12],
+  /** Contract price as a multiple of the market price when offered. */
+  contractPriceFactor: [0.95, 1.25],
+  /** Penalty per missing barrel, as a fraction of the contract price. */
+  contractPenaltyFactor: 0.5,
+
+  sabotageCost: { fire: 300_000, tanker: 250_000, books: 200_000 },
+  sabotageSuccess: 0.65,
+  /** Success chance when the target has hired security. */
+  sabotageSuccessVsSecurity: 0.25,
+  /** Chance a failed saboteur is traced back to the company that hired them. */
+  sabotageCaughtChance: 0.5,
+  sabotageFine: 1_000_000,
+  /** A cooked balance sheet triggers a tax audit fine of this share of cash. */
+  auditFineFraction: 0.15,
+  auditFineRange: [100_000, 1_500_000],
+  securityCostPerMonth: 60_000,
+
+  /** Share of a burning well's reserves lost each month. */
+  fireLossRate: 0.05,
+  /** A fire nobody puts out burns itself out after this many months. */
+  fireBurnOutMonths: 4,
+  extinguishCost: 500_000,
+
+  /** Chance of a world event in the newspaper each month. */
+  newsChance: 0.3,
+  /** Dollars a price shock moves the oil price. */
+  newsPriceShock: [4, 10],
+
   loanInterestPerMonth: 0.01,
   maxDebt: 10_000_000,
 
@@ -57,6 +98,12 @@ export const RULES = {
     buildTank: 2,
     sellOil: 1,
     loan: 1,
+    buildPipeline: 4,
+    buyTanker: 2,
+    acceptContract: 2,
+    sabotage: 3,
+    setSecurity: 1,
+    extinguishFire: 2,
   },
 } as const;
 
@@ -73,6 +120,7 @@ export interface RegionData {
   reserves: [number, number];
   /** Cost per barrel to pump. */
   productionCost: number;
+  pipelineCost: number;
 }
 
 /** Per-region economics: harsh regions cost more but hide bigger fields. */
@@ -85,6 +133,7 @@ export const REGION_DATA: Record<Region, RegionData> = {
     oilChance: 0.5,
     reserves: [1_000_000, 4_000_000],
     productionCost: 6,
+    pipelineCost: 1_200_000,
   },
   'North America': {
     licenceCost: 400_000,
@@ -94,6 +143,7 @@ export const REGION_DATA: Record<Region, RegionData> = {
     oilChance: 0.55,
     reserves: [500_000, 2_000_000],
     productionCost: 5,
+    pipelineCost: 700_000,
   },
   'Central America': {
     licenceCost: 250_000,
@@ -103,6 +153,7 @@ export const REGION_DATA: Record<Region, RegionData> = {
     oilChance: 0.45,
     reserves: [400_000, 1_500_000],
     productionCost: 4,
+    pipelineCost: 500_000,
   },
   'South America': {
     licenceCost: 300_000,
@@ -112,6 +163,7 @@ export const REGION_DATA: Record<Region, RegionData> = {
     oilChance: 0.5,
     reserves: [500_000, 2_500_000],
     productionCost: 4,
+    pipelineCost: 600_000,
   },
   Europe: {
     licenceCost: 700_000,
@@ -121,6 +173,7 @@ export const REGION_DATA: Record<Region, RegionData> = {
     oilChance: 0.4,
     reserves: [800_000, 3_000_000],
     productionCost: 7,
+    pipelineCost: 900_000,
   },
   USSR: {
     licenceCost: 500_000,
@@ -130,6 +183,7 @@ export const REGION_DATA: Record<Region, RegionData> = {
     oilChance: 0.55,
     reserves: [800_000, 3_500_000],
     productionCost: 5,
+    pipelineCost: 1_000_000,
   },
   'Gulf Region': {
     licenceCost: 1_500_000,
@@ -139,6 +193,7 @@ export const REGION_DATA: Record<Region, RegionData> = {
     oilChance: 0.65,
     reserves: [1_000_000, 4_000_000],
     productionCost: 2,
+    pipelineCost: 600_000,
   },
   Indochina: {
     licenceCost: 200_000,
@@ -148,6 +203,7 @@ export const REGION_DATA: Record<Region, RegionData> = {
     oilChance: 0.35,
     reserves: [300_000, 1_500_000],
     productionCost: 3,
+    pipelineCost: 500_000,
   },
 };
 

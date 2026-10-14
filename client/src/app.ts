@@ -13,6 +13,8 @@ export type Screen =
   | 'world'
   | 'region'
   | 'market'
+  | 'contracts'
+  | 'agent'
   | 'bank'
   | 'report'
   | 'gameover';
@@ -32,6 +34,8 @@ export interface App {
   joinCode: string;
   region?: Region;
   fieldId?: string;
+  /** Rival picked on the agent screen. */
+  target?: Company;
   /** Short feedback line shown at the bottom of the screen. */
   message?: { text: string; error: boolean; until: number };
 }

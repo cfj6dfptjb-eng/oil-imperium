@@ -12,6 +12,9 @@ export interface RivalView {
   producingWells: number;
   /** Barrels sold last month. */
   lastSold: number;
+  /** Pipelines and tankers are out in the open for anyone to see. */
+  pipelines: Player['pipelines'];
+  tankers: number;
 }
 
 export interface PlayerView extends Omit<GameState, 'players' | 'fields' | 'rngState'> {
@@ -23,14 +26,16 @@ export interface PlayerView extends Omit<GameState, 'players' | 'fields' | 'rngS
 /**
  * The game state as one company sees it. Hidden reserves and depths are
  * blanked unless the field is that company's own and has been drilled, and
- * rivals' finances, surveys and storage are left out.
+ * rivals' finances, surveys, storage, contracts and sabotage plans are left
+ * out, as are other companies' secret events.
  */
 export function viewFor(state: GameState, company: Company): PlayerView {
   const you = state.players.find((p) => p.company === company);
   if (!you) throw new Error('Unknown company');
-  const { players, fields, rngState: _rng, ...rest } = state;
+  const { players, fields, events, rngState: _rng, ...rest } = state;
   return {
     ...rest,
+    events: events.filter((e) => !('secret' in e && e.secret) || ('company' in e && e.company === company)),
     you: structuredClone(you),
     rivals: players
       .filter((p) => p.company !== company)
@@ -42,6 +47,8 @@ export function viewFor(state: GameState, company: Company): PlayerView {
         netWorth: netWorth(state, p),
         producingWells: fields.filter((f) => f.owner === p.company && f.status === 'producing').length,
         lastSold: p.salesHistory.at(-1) ?? 0,
+        pipelines: [...p.pipelines],
+        tankers: Object.values(p.tankers).reduce((a, b) => a + (b ?? 0), 0),
       })),
     fields: fields.map((f) => {
       const revealed = f.owner === company && f.status !== 'unexplored' && f.status !== 'drilling';
