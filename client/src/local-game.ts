@@ -42,16 +42,17 @@ export class LocalGame {
     return null;
   }
 
+  /** True once the game is over or the human's company has gone bankrupt. */
+  get finished(): boolean {
+    return this.state.over || this.me.bankrupt;
+  }
+
   /** Ends the human's month, resolves it and lets the computers play the next one. */
   endMonth(): void {
     const month = this.state.month;
     this.perform({ type: 'endTurn' });
     if (this.state.month !== month) this.lastEvents = this.state.events;
-    this.playComputers();
-    // If the human is out of the game, keep playing months until it ends.
-    while (this.me.bankrupt && !this.state.over) {
-      this.playComputers();
-    }
+    if (!this.finished) this.playComputers();
   }
 
   private playComputers(): void {

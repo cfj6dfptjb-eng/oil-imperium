@@ -19,18 +19,19 @@ describe('LocalGame', () => {
     expect(game.perform({ type: 'buyLicence', region: 'Europe' })).toBeNull();
   });
 
-  it('plays on to the end if the human goes bankrupt', () => {
+  it('finishes when the human goes bankrupt, even if the computers play on', () => {
     const game = new LocalGame('Interoil', 'survival', 7);
     game.state.players[0].cash = 0;
     game.state.players[0].debt = 10_000_000;
     game.endMonth();
     expect(game.me.bankrupt).toBe(true);
-    expect(game.state.over).toBe(true);
+    expect(game.state.over).toBe(false);
+    expect(game.finished).toBe(true);
   });
 
   it('plays a whole 3-year game', () => {
     const game = new LocalGame('Interoil', 'timeLimit', 3);
-    while (!game.state.over) game.endMonth();
+    while (!game.finished) game.endMonth();
     expect(game.state.month).toBe(36);
   });
 });

@@ -75,8 +75,13 @@ export function drawGameOver(ui: Ui, app: App): void {
   drawDesert(ui.ctx, app.frame);
   const won = state.winner === game.human;
   ui.big('GAME OVER', SCREEN_WIDTH / 2, 30, PAL.gold, 'center');
+  const verdict = !state.over
+    ? 'YOUR COMPANY HAS GONE BANKRUPT.'
+    : state.winner
+      ? won ? 'YOU HAVE BUILT AN OIL IMPERIUM!' : `${state.winner.toUpperCase()} WINS.`
+      : 'NOBODY WINS.';
   ui.text(
-    state.winner ? (won ? 'YOU HAVE BUILT AN OIL IMPERIUM!' : `${state.winner.toUpperCase()} WINS.`) : 'NOBODY WINS.',
+    verdict,
     SCREEN_WIDTH / 2, 56, won ? PAL.green : PAL.white, 'center',
   );
   const ranked = [...state.players].sort((a, b) => netWorth(state, b) - netWorth(state, a));

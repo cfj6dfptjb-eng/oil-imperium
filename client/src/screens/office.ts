@@ -67,7 +67,7 @@ export function drawOffice(ui: Ui, app: App): void {
   const door = { x: 262, y: 84, w: 40, h: 86 };
   const overDoor = ui.hotspot(door.x, door.y, door.w, door.h, () => {
     app.game!.endMonth();
-    app.screen = app.game!.state.over ? 'gameover' : 'report';
+    app.screen = app.game!.finished ? 'gameover' : 'report';
   });
   ctx.fillStyle = overDoor ? PAL.gold : PAL.woodDark;
   ctx.fillRect(door.x - 2, door.y - 2, door.w + 4, door.h + 2);
