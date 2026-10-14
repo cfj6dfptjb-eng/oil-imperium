@@ -23,6 +23,21 @@ export class Rng {
     return min + Math.floor(this.next() * (max - min + 1));
   }
 
+  /** Float in [min, max). */
+  float(min: number, max: number): number {
+    return min + this.next() * (max - min);
+  }
+
+  /** True with the given probability. */
+  chance(probability: number): boolean {
+    return this.next() < probability;
+  }
+
+  /** Roughly normal value around 0 with the given spread (sum of uniforms). */
+  noise(spread: number): number {
+    return (this.next() + this.next() + this.next() - 1.5) * spread;
+  }
+
   /** Current internal state, for saving. */
   get seed(): number {
     return this.state;
