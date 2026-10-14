@@ -14,6 +14,8 @@ export function drawHud(ui: Ui, app: App): void {
   const { ctx } = ui;
   ctx.fillStyle = PAL.black;
   ctx.fillRect(0, 0, SCREEN_WIDTH, HUD_HEIGHT);
+  ctx.fillStyle = PAL.goldDark;
+  ctx.fillRect(0, HUD_HEIGHT - 1, SCREEN_WIDTH, 1);
   ui.text(me.company.toUpperCase(), 3, 2, COMPANY_COLORS[me.company]);
   ui.text(date(view.month), 110, 2, PAL.white);
   ui.text(money(me.cash), 222, 2, me.cash < 200_000 ? PAL.red : PAL.green, 'right');
@@ -25,9 +27,11 @@ export function drawFooter(ui: Ui, app: App, hint = ''): void {
   const { ctx } = ui;
   ctx.fillStyle = PAL.black;
   ctx.fillRect(0, FOOTER_Y, SCREEN_WIDTH, SCREEN_HEIGHT - FOOTER_Y);
+  ctx.fillStyle = PAL.goldDark;
+  ctx.fillRect(0, FOOTER_Y, SCREEN_WIDTH, 1);
   const msg = app.message && app.message.until > app.frame ? app.message : null;
-  if (msg) ui.text(msg.text.toUpperCase(), 3, FOOTER_Y + 2, msg.error ? PAL.red : PAL.gold);
-  else if (hint) ui.text(hint.toUpperCase(), 3, FOOTER_Y + 2, PAL.grey);
+  if (msg) ui.text(msg.text.toUpperCase(), 3, FOOTER_Y + 3, msg.error ? PAL.red : PAL.gold);
+  else if (hint) ui.text(hint.toUpperCase(), 3, FOOTER_Y + 3, PAL.grey);
 }
 
 /** Small "BACK" button used on every sub-screen, returning to the office. */

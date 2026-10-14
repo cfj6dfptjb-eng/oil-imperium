@@ -3,6 +3,7 @@ import { act, type App } from '../app.js';
 import { barrels, money } from '../format.js';
 import { headline } from '../news.js';
 import { PAL } from '../palette.js';
+import { drawBackdrop } from '../art/backdrops.js';
 import type { Ui } from '../ui.js';
 import { backButton, drawFooter, drawHud, FOOTER_Y, HUD_HEIGHT } from './hud.js';
 
@@ -11,10 +12,11 @@ export function drawMarket(ui: Ui, app: App): void {
   const { ctx } = ui;
   const { market, you: me, events } = app.game!.view!;
 
-  ctx.fillStyle = PAL.white;
-  ctx.fillRect(0, HUD_HEIGHT, SCREEN_WIDTH, FOOTER_Y - HUD_HEIGHT);
-  ui.big('OIL NEWS', SCREEN_WIDTH / 2, HUD_HEIGHT + 3, PAL.black, 'center');
+  drawBackdrop(ctx, 'newsprint');
   ctx.fillStyle = PAL.black;
+  ctx.fillRect(6, HUD_HEIGHT + 3, SCREEN_WIDTH - 12, 2);
+  ui.text('THE DAILY BARREL', SCREEN_WIDTH / 2, HUD_HEIGHT + 4, PAL.black, 'center', { scale: 2, shadow: null });
+  ctx.fillRect(6, HUD_HEIGHT + 20, SCREEN_WIDTH - 12, 1);
   ctx.fillRect(6, HUD_HEIGHT + 22, SCREEN_WIDTH - 12, 1);
 
   let y = HUD_HEIGHT + 26;

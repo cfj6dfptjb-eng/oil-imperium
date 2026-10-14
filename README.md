@@ -58,3 +58,7 @@ The original game's graphics, music and name belong to their rights holders, so 
 repository contains only newly made art in the same style. Never commit files
 extracted from the original disks. The `assets/classic/` folder is git-ignored for
 private use, see section 4 of the design doc.
+
+All artwork is drawn by code in `client/src/art/`: a hand-made 5x7 pixel font,
+dithered scenes in a 1980s Amiga style, and a world map generated from
+[Natural Earth](https://www.naturalearthdata.com/) coastlines, which are in the public domain.

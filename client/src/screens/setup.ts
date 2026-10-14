@@ -3,6 +3,7 @@ import { say, type App } from '../app.js';
 import { LocalGame } from '../local-game.js';
 import { COMPANY_COLORS, PAL } from '../palette.js';
 import type { Ui } from '../ui.js';
+import { menuBackground } from './menu.js';
 
 const GOALS: { goal: VictoryGoal; label: string; help: string }[] = [
   { goal: 'timeLimit', label: '3 YEARS', help: 'Richest company after 3 years wins' },
@@ -12,10 +13,7 @@ const GOALS: { goal: VictoryGoal; label: string; help: string }[] = [
 ];
 
 export function drawSetup(ui: Ui, app: App): void {
-  const { ctx } = ui;
-  ctx.fillStyle = PAL.blueDark;
-  ctx.fillRect(0, 0, SCREEN_WIDTH, 256);
-  ui.big('NEW GAME', SCREEN_WIDTH / 2, 10, PAL.gold, 'center');
+  menuBackground(ui, app.frame, 'NEW GAME');
 
   ui.text('CHOOSE YOUR COMPANY', 20, 40, PAL.white);
   COMPANIES.forEach((company, i) => {

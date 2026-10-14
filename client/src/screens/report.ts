@@ -5,6 +5,7 @@ import { headline, SABOTAGE_NAMES } from '../news.js';
 import { COMPANY_COLORS, PAL } from '../palette.js';
 import { standings } from '../session.js';
 import type { Ui } from '../ui.js';
+import { drawBackdrop } from '../art/backdrops.js';
 import { drawDesert } from './title.js';
 import { backButton, drawFooter, drawHud, FOOTER_Y, HUD_HEIGHT } from './hud.js';
 
@@ -12,8 +13,8 @@ import { backButton, drawFooter, drawHud, FOOTER_Y, HUD_HEIGHT } from './hud.js'
 export function drawReport(ui: Ui, app: App): void {
   const { ctx } = ui;
   const view = app.game!.view!;
-  ctx.fillStyle = PAL.blueDark;
-  ctx.fillRect(0, HUD_HEIGHT, SCREEN_WIDTH, FOOTER_Y - HUD_HEIGHT);
+  drawBackdrop(ctx, 'desk');
+  ui.panel(4, HUD_HEIGHT + 22, SCREEN_WIDTH - 8, FOOTER_Y - HUD_HEIGHT - 42);
   ui.big(`REPORT ${date(Math.max(0, view.month - 1))}`, SCREEN_WIDTH / 2, HUD_HEIGHT + 4, PAL.gold, 'center');
 
   let y = HUD_HEIGHT + 26;
@@ -103,7 +104,7 @@ export function drawGameOver(ui: Ui, app: App): void {
       ? won ? 'YOU HAVE BUILT AN OIL IMPERIUM!' : `${view.winner.toUpperCase()} WINS.`
       : 'NOBODY WINS.';
   ui.text(verdict, SCREEN_WIDTH / 2, 56, won ? PAL.green : PAL.white, 'center');
-  ui.panel(50, 74, 220, 56);
+  ui.panel(50, 74, 220, 56, 'rgba(0, 17, 51, 0.85)');
   standings(view).forEach((s, i) => {
     ui.text(`${i + 1}. ${s.company.toUpperCase()}`, 60, 80 + i * 12, COMPANY_COLORS[s.company]);
     ui.text(s.bankrupt ? 'BANKRUPT' : money(s.netWorth), 260, 80 + i * 12, PAL.white, 'right');

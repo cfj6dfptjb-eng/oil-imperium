@@ -4,6 +4,7 @@ import { loadSavedRoom } from '../online.js';
 import { COMPANY_COLORS, PAL } from '../palette.js';
 import type { Ui } from '../ui.js';
 import { FOOTER_Y } from './hud.js';
+import { drawDesert } from './title.js';
 
 const GOAL_LABELS: Record<VictoryGoal, string> = {
   timeLimit: '3 YEARS',
@@ -12,9 +13,14 @@ const GOAL_LABELS: Record<VictoryGoal, string> = {
   money: '$60 MILLION',
 };
 
-function background(ui: Ui, title: string): void {
-  ui.ctx.fillStyle = PAL.blueDark;
+/** The desert from the title screen, dimmed, with a heading. Shared with the setup screen. */
+export function menuBackground(ui: Ui, frame: number, title: string): void {
+  drawDesert(ui.ctx, frame);
+  ui.ctx.fillStyle = 'rgba(0, 0, 16, 0.55)';
   ui.ctx.fillRect(0, 0, SCREEN_WIDTH, 256);
+  ui.panel(8, 27, SCREEN_WIDTH - 16, 205, 'rgba(0, 17, 51, 0.85)');
+  ui.ctx.fillStyle = PAL.black;
+  ui.ctx.fillRect(0, FOOTER_Y, SCREEN_WIDTH, 256 - FOOTER_Y);
   ui.big(title, SCREEN_WIDTH / 2, 10, PAL.gold, 'center');
 }
 
@@ -30,7 +36,7 @@ function cursor(app: App): string {
 
 /** Main menu: your name, then single player or an online game. */
 export function drawMenu(ui: Ui, app: App): void {
-  background(ui, GAME_TITLE.toUpperCase());
+  menuBackground(ui, app.frame, GAME_TITLE.toUpperCase());
   const online = app.conn.state === 'online';
 
   ui.text('YOUR NAME (TYPE TO CHANGE)', SCREEN_WIDTH / 2, 44, PAL.greyLight, 'center');
@@ -57,7 +63,7 @@ export function drawMenu(ui: Ui, app: App): void {
 
 /** Typing in a friend's room code. */
 export function drawJoin(ui: Ui, app: App): void {
-  background(ui, 'JOIN GAME');
+  menuBackground(ui, app.frame, 'JOIN GAME');
   ui.text('TYPE THE 4-LETTER GAME CODE', SCREEN_WIDTH / 2, 60, PAL.white, 'center');
   ui.panel(SCREEN_WIDTH / 2 - 40, 76, 80, 24, PAL.black);
   ui.big(app.joinCode + (app.joinCode.length < 4 ? cursor(app) : ''), SCREEN_WIDTH / 2, 80, PAL.gold, 'center');
@@ -73,7 +79,7 @@ export function drawJoin(ui: Ui, app: App): void {
 export function drawLobby(ui: Ui, app: App): void {
   const { online } = app;
   const room = online.room;
-  background(ui, room ? `GAME ${room.code}` : 'ONLINE GAME');
+  menuBackground(ui, app.frame, room ? `GAME ${room.code}` : 'ONLINE GAME');
   const leave = () => {
     online.leave();
     app.screen = 'menu';

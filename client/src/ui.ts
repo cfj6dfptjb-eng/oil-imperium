@@ -1,5 +1,5 @@
 import { PAL } from './palette.js';
-import { pixelText, textWidth } from './text.js';
+import { pixelText, textWidth, type TextStyle } from './text.js';
 
 interface Hotspot {
   x: number;
@@ -58,40 +58,49 @@ export class Ui {
     onClick: () => void,
     opts: { w?: number; disabled?: boolean; color?: string } = {},
   ): number {
-    const w = opts.w ?? textWidth(label) + 8;
+    const w = opts.w ?? textWidth(label) + 10;
     const h = 12;
     const hover = !opts.disabled && this.hovering(x, y, w, h);
     const { ctx } = this;
-    ctx.fillStyle = opts.disabled ? PAL.greyDark : hover ? PAL.greyLight : PAL.grey;
+    ctx.fillStyle = PAL.black;
+    ctx.fillRect(x - 1, y - 1, w + 2, h + 2);
+    ctx.fillStyle = opts.disabled ? PAL.greyDark : hover ? PAL.goldLight : PAL.buttonFace;
     ctx.fillRect(x, y, w, h);
-    ctx.fillStyle = PAL.white;
+    ctx.fillStyle = opts.disabled ? PAL.grey : PAL.white;
     ctx.fillRect(x, y, w, 1);
     ctx.fillRect(x, y, 1, h);
-    ctx.fillStyle = PAL.black;
-    ctx.fillRect(x, y + h - 1, w, 1);
-    ctx.fillRect(x + w - 1, y, 1, h);
-    pixelText(ctx, label, x + w / 2, y + 1, opts.disabled ? PAL.grey : (opts.color ?? PAL.black), 8, 'center');
+    ctx.fillStyle = opts.disabled ? PAL.black : PAL.buttonShade;
+    ctx.fillRect(x + 1, y + h - 1, w - 1, 1);
+    ctx.fillRect(x + w - 1, y + 1, 1, h - 1);
+    const color = opts.disabled ? PAL.grey : (opts.color ?? PAL.black);
+    pixelText(ctx, label, x + Math.floor(w / 2), y + 1, color, 'center', { shadow: null });
     if (!opts.disabled) this.pending.push({ x, y, w, h, onClick });
     return w;
   }
 
+  /** Bevelled panel, like a window in the Amiga Workbench. */
   panel(x: number, y: number, w: number, h: number, fill: string = PAL.blueDark): void {
     const { ctx } = this;
+    ctx.fillStyle = PAL.black;
+    ctx.fillRect(x - 1, y - 1, w + 2, h + 2);
     ctx.fillStyle = fill;
     ctx.fillRect(x, y, w, h);
-    ctx.fillStyle = PAL.grey;
+    ctx.fillStyle = PAL.panelLight;
     ctx.fillRect(x, y, w, 1);
-    ctx.fillRect(x, y + h - 1, w, 1);
     ctx.fillRect(x, y, 1, h);
-    ctx.fillRect(x + w - 1, y, 1, h);
+    ctx.fillStyle = PAL.panelDark;
+    ctx.fillRect(x + 1, y + h - 1, w - 1, 1);
+    ctx.fillRect(x + w - 1, y + 1, 1, h - 1);
   }
 
-  text(text: string, x: number, y: number, color: string = PAL.white, align: 'left' | 'center' | 'right' = 'left'): void {
-    pixelText(this.ctx, text, x, y, color, 8, align);
+  text(text: string, x: number, y: number, color: string = PAL.white, align: 'left' | 'center' | 'right' = 'left', style: TextStyle = {}): void {
+    pixelText(this.ctx, text, x, y, color, align, style);
   }
 
+  /** Double-size heading with a copper-style colour fade. */
   big(text: string, x: number, y: number, color: string = PAL.gold, align: 'left' | 'center' | 'right' = 'left'): void {
-    pixelText(this.ctx, text, x, y, color, 16, align);
+    const fade = color === PAL.gold ? PAL.goldDark : undefined;
+    pixelText(this.ctx, text, x, y, color, align, { scale: 2, fade, shadow: PAL.black });
   }
 }
 
