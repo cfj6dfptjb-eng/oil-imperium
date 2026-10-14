@@ -7,14 +7,16 @@ oil business strategy.
 
 See [docs/design.md](docs/design.md) for the full design and milestones.
 
-> **Status:** milestone 0, project skeleton. The title screen connects to the server
-> over WebSockets; there is no gameplay yet.
+> **Status:** milestone 1. The rules engine in `shared/src/game/` plays full games in
+> tests (licences, surveys, drilling, storage, sales, loans, oil price, bankruptcy and
+> all four victory goals). There is no game screen yet; the title screen only checks
+> the server connection.
 
 ## Project layout
 
 | Folder | What it holds |
 |---|---|
-| `shared/` | Game rules, constants and the network protocol, used by both server and client |
+| `shared/` | Rules engine (`src/game/`), constants and the network protocol, used by both server and client |
 | `server/` | Node.js HTTP + WebSocket server; serves the built client |
 | `client/` | Browser game: TypeScript drawing on an HTML canvas, built with Vite |
 | `deploy/` | systemd unit and Proxmox LXC setup guide |
